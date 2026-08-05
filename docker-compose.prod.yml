@@ -1,0 +1,384 @@
+# =============================================================================
+# CivicPulse · docker-compose.prod.yml
+# Despliegue en producción detrás de un Traefik ya existente.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Diferencias con docker-compose.yml (desarrollo):
+#   · Ningún puerto publicado. Traefik es el único punto de entrada.
+#   · Dos redes: la interna del proyecto y la externa donde vive Traefik.
+#   · Keycloak en modo `start` con base de datos real, no `start-dev` con H2.
+#   · Un solo dominio con rutas por prefijo → CORS deja de existir.
+#
+# ── POR QUÉ UN SOLO DOMINIO ─────────────────────────────────────────────────
+#   https://DOMINIO/          → frontend
+#   https://DOMINIO/api/      → sentiment-api
+#   https://DOMINIO/alerts/   → alerts-api  (incluye el stream SSE)
+#   https://DOMINIO/reports/  → reports-api
+#   https://auth.DOMINIO/     → Keycloak
+#
+# Con subdominios distintos por servicio haría falta CORS con credenciales en
+# cada uno, y el EventSource del stream de alertas arrastra los problemas de
+# cookies de terceros. Mismo origen: nada de eso ocurre.
+#
+# Keycloak sí va en subdominio propio: sus rutas y cookies asumen estar en la
+# raíz, y montarlo bajo un prefijo obliga a KC_HTTP_RELATIVE_PATH y a revisar
+# cada redirección.
+# =============================================================================
+
+name: ${COMPOSE_PROJECT_NAME:-civicpulse}
+
+# ── Red de Traefik ──────────────────────────────────────────────────────────
+# Ya existe: este compose se une a ella, no la crea.
+#   docker network ls | grep -i traefik
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:?defina TRAEFIK_NETWORK con el nombre de la red de Traefik}
+  civicnet:
+    driver: bridge
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-oidc-env: &oidc-env
+  OIDC_ISSUER:       ${OIDC_ISSUER}
+  OIDC_JWKS_URI:     ${OIDC_JWKS_URI}
+  OIDC_AUDIENCE:     ${KC_AUDIENCE:-account}
+  AUTH_ORG_CLAIM:    ${AUTH_ORG_CLAIM:-organization_id}
+  AUTH_ROLES_CLIENT: ${AUTH_ROLES_CLIENT:-civicpulse-frontend}
+
+x-db-env: &db-env
+  DATABASE_URL:                     ${DATABASE_URL:?defina DATABASE_URL}
+  DATABASE_SSL:                     ${DATABASE_SSL:-true}
+  DATABASE_SSL_REJECT_UNAUTHORIZED: ${DATABASE_SSL_REJECT_UNAUTHORIZED:-false}
+  DATABASE_POOL_MAX:                ${DB_POOL_SIZE:-10}
+
+x-service-common: &service-common
+  restart: unless-stopped
+  logging: *default-logging
+  networks: [civicnet, traefik]
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  depends_on:
+    db-preflight:
+      condition: service_completed_successfully
+
+services:
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Verificación de la base externa. Corre una vez y termina.
+  # ───────────────────────────────────────────────────────────────────────────
+  db-preflight:
+    image: postgres:16-alpine
+    container_name: civicpulse-db-preflight
+    logging: *default-logging
+    environment:
+      DATABASE_URL:      ${DATABASE_URL}
+      PGCONNECT_TIMEOUT: 10
+      AUTHOR_PEPPER:     ${CIVICPULSE_AUTHOR_PEPPER:?defina CIVICPULSE_AUTHOR_PEPPER}
+      # En producción NUNCA se autoinstala: el esquema se despliega a mano,
+      # revisando la salida. Una migración silenciosa en producción es una
+      # forma cara de descubrir un error de permisos.
+      DB_AUTO_INSTALL:   "false"
+      DB_WAIT_ATTEMPTS:  ${DB_WAIT_ATTEMPTS:-30}
+    volumes:
+      - ./sql:/sql:ro
+      - ./prompts:/prompts:ro
+      - ./scripts:/scripts:ro
+    entrypoint: ["/bin/sh", "/scripts/db-preflight.sh"]
+    restart: "no"
+    networks: [civicnet]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      traefik.enable: "false"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Keycloak · https://auth.DOMINIO
+  #
+  # Modo `start`, no `start-dev`: este último usa una base H2 en memoria que se
+  # pierde al reiniciar el contenedor, llevándose usuarios y sesiones.
+  # Se apunta a la misma instancia externa, en una base de datos aparte.
+  # ───────────────────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: civicpulse-keycloak
+    # Perfil opcional: si ya tiene un Keycloak (auth.oeste.mx), NO lo levante.
+    # Cree ahí el realm `civicpulse` importando docs/keycloak/civicpulse-realm.json
+    # y apunte OIDC_ISSUER / OIDC_JWKS_URI a él.
+    #   Con Keycloak propio:  docker compose -f docker-compose.prod.yml --profile keycloak up -d
+    profiles: ["keycloak"]
+    restart: unless-stopped
+    logging: *default-logging
+    command: ["start", "--optimized"]
+    environment:
+      # Sin `:?` a propósito. Compose interpola TODO el archivo antes de filtrar
+      # por perfiles, así que una variable obligatoria aquí abortaría el
+      # despliegue de quien no levanta este servicio. Keycloak falla solo, y con
+      # un mensaje claro, si arranca sin base de datos.
+      KC_DB:          postgres
+      KC_DB_URL:      ${KC_DB_URL:-}
+      KC_DB_USERNAME: ${KC_DB_USERNAME:-}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-}
+
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-}
+
+      # Detrás de un proxy TLS: sin esto Keycloak construye las URL de
+      # redirección en http y el navegador rechaza el flujo.
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED:  "true"
+      KC_HOSTNAME:      https://${AUTH_DOMAIN}
+      KC_HOSTNAME_STRICT: "true"
+      KC_HEALTH_ENABLED:  "true"
+      KC_METRICS_ENABLED: "true"
+      KC_LOG_LEVEL: ${KC_LOG_LEVEL:-info}
+    volumes:
+      - ./docs/keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      # La salud vive en el puerto de gestión 9000, no en el 8080.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 90s
+    networks: [civicnet, traefik]
+    labels:
+      traefik.enable: "true"
+      # Obligatorio con más de una red: sin esto Traefik puede elegir la IP de
+      # civicnet, a la que no llega, y el servicio responde 504.
+      traefik.docker.network: ${TRAEFIK_NETWORK}
+      traefik.http.routers.cp-auth.rule: Host(`${AUTH_DOMAIN}`)
+      traefik.http.routers.cp-auth.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-auth.tls: "true"
+      traefik.http.routers.cp-auth.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.services.cp-auth.loadbalancer.server.port: "8080"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # API principal · https://DOMINIO/api
+  # ───────────────────────────────────────────────────────────────────────────
+  sentiment-api:
+    <<: *service-common
+    build: { context: ./backend/sentiment-api }
+    image: civicpulse/sentiment-api:${IMAGE_TAG:-1.0.0}
+    container_name: civicpulse-sentiment-api
+    depends_on:
+      db-preflight:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL:           ${DATABASE_URL_ASYNC:?defina DATABASE_URL_ASYNC}
+      DATABASE_SSL:           ${DATABASE_SSL:-true}
+      DATABASE_SSL_ROOT_CERT: ${DATABASE_SSL_ROOT_CERT:-}
+      POOL_SIZE:              ${DB_POOL_SIZE:-10}
+      MAX_OVERFLOW:           ${DB_MAX_OVERFLOW:-20}
+      POOL_RECYCLE_SEC:       ${DB_POOL_RECYCLE_SEC:-1800}
+      STATEMENT_TIMEOUT_MS:   ${DB_STATEMENT_TIMEOUT_MS:-15000}
+
+      # URL del Keycloak que valida los tokens. Con uno externo va la pública;
+      # con el del perfil `keycloak`, http://keycloak:8080.
+      KC_URL:      ${KC_URL:?defina KC_URL}
+      KC_REALM:    ${KC_REALM:-civicpulse}
+      KC_AUDIENCE: ${KC_AUDIENCE:-account}
+      API_PREFIX:  /v1
+      PORT:        8000
+      LOG_LEVEL:   ${LOG_LEVEL:-info}
+      AUTH_DISABLED: "false"
+      # Mismo origen: la lista existe sólo como cinturón de seguridad.
+      CORS_ORIGINS: https://${APP_DOMAIN:?defina APP_DOMAIN}
+
+      CLASSIFIER_ENABLED:        ${CLASSIFIER_ENABLED:-false}
+      LLM_PROVIDER:              ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY:            ${GEMINI_API_KEY:?defina GEMINI_API_KEY}
+      GEMINI_MODEL:              ${GEMINI_MODEL:-gemini-flash-lite-latest}
+      GEMINI_BASE_URL:           ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}
+      GEMINI_API_VERSION:        ${GEMINI_API_VERSION:-v1beta}
+      GEMINI_SAFETY_THRESHOLD:   ${GEMINI_SAFETY_THRESHOLD:-BLOCK_NONE}
+      LLM_TIMEOUT_MS:            ${LLM_TIMEOUT_MS:-30000}
+      LLM_API_KEY_REF:           ${LLM_API_KEY_REF:-}
+      CLASSIFIER_BATCH_LIMIT:    ${CLASSIFIER_BATCH_LIMIT:-30}
+      CLASSIFIER_MIN_CONFIDENCE: ${CLASSIFIER_MIN_CONFIDENCE:-0.6}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK}
+      traefik.http.routers.cp-api.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/api`)
+      traefik.http.routers.cp-api.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-api.tls: "true"
+      traefik.http.routers.cp-api.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      # Prioridad explícita: el frontend responde a PathPrefix(`/`) y, sin esto,
+      # el orden depende de la longitud de la regla. Mejor no dejarlo al azar.
+      traefik.http.routers.cp-api.priority: "100"
+      traefik.http.routers.cp-api.middlewares: cp-api-strip@docker
+      traefik.http.middlewares.cp-api-strip.stripprefix.prefixes: /api
+      traefik.http.services.cp-api.loadbalancer.server.port: "8000"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Alertas · https://DOMINIO/alerts  (incluye el stream SSE)
+  # ───────────────────────────────────────────────────────────────────────────
+  alerts-api:
+    <<: *service-common
+    build: { context: ./backend/alerts-api }
+    image: civicpulse/alerts-api:${IMAGE_TAG:-1.0.0}
+    container_name: civicpulse-alerts-api
+    depends_on:
+      db-preflight:
+        condition: service_completed_successfully
+    environment:
+      <<: [*oidc-env, *db-env]
+      NODE_ENV:                ${NODE_ENV:-production}
+      PORT:                    8003
+      LOG_LEVEL:               ${LOG_LEVEL:-info}
+      CORS_ORIGINS:            https://${APP_DOMAIN}
+      ALERT_EVAL_ENABLED:      ${ALERT_EVAL_ENABLED:-true}
+      ALERT_EVAL_INTERVAL_SEC: ${ALERT_EVAL_INTERVAL_SEC:-60}
+      ALERT_EVAL_LOCK_KEY:     ${ALERT_EVAL_LOCK_KEY:-918273645}
+      SSE_HEARTBEAT_MS:        ${SSE_HEARTBEAT_MS:-25000}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK}
+      traefik.http.routers.cp-alerts.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/alerts`)
+      traefik.http.routers.cp-alerts.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-alerts.tls: "true"
+      traefik.http.routers.cp-alerts.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.routers.cp-alerts.priority: "100"
+      # SOLO stripprefix. Nada de `compress` ni buffering en esta ruta: el
+      # stream SSE es una respuesta que nunca termina, y cualquier middleware
+      # que acumule antes de reenviar la deja colgada sin un solo evento.
+      traefik.http.routers.cp-alerts.middlewares: cp-alerts-strip@docker
+      traefik.http.middlewares.cp-alerts-strip.stripprefix.prefixes: /alerts
+      traefik.http.services.cp-alerts.loadbalancer.server.port: "8003"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Informes · https://DOMINIO/reports
+  # ───────────────────────────────────────────────────────────────────────────
+  reports-api:
+    <<: *service-common
+    build: { context: ./backend/reports-api }
+    image: civicpulse/reports-api:${IMAGE_TAG:-1.0.0}
+    container_name: civicpulse-reports-api
+    depends_on:
+      db-preflight:
+        condition: service_completed_successfully
+    environment:
+      <<: [*oidc-env, *db-env]
+      NODE_ENV:               ${NODE_ENV:-production}
+      PORT:                   8002
+      LOG_LEVEL:              ${LOG_LEVEL:-info}
+      CORS_ORIGINS:           https://${APP_DOMAIN}
+      REPORTS_STORAGE_DIR:    /app/generated
+      REPORTS_RETENTION_DAYS: ${REPORTS_RETENTION_DAYS:-30}
+    volumes:
+      - reports:/app/generated
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK}
+      traefik.http.routers.cp-reports.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/reports`)
+      traefik.http.routers.cp-reports.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-reports.tls: "true"
+      traefik.http.routers.cp-reports.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.routers.cp-reports.priority: "100"
+      traefik.http.routers.cp-reports.middlewares: cp-reports-strip@docker
+      traefik.http.middlewares.cp-reports-strip.stripprefix.prefixes: /reports
+      traefik.http.services.cp-reports.loadbalancer.server.port: "8002"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Bot de WhatsApp · sin ruta pública
+  #
+  # No se expone en Traefik: sólo lo consumen los demás servicios por la red
+  # interna. Publicarlo daría acceso externo al envío de mensajes.
+  # ───────────────────────────────────────────────────────────────────────────
+  whatsapp-bot:
+    <<: *service-common
+    build: { context: ./backend/whatsapp-bot }
+    image: civicpulse/whatsapp-bot:${IMAGE_TAG:-1.0.0}
+    container_name: civicpulse-whatsapp-bot
+    profiles: ["whatsapp", "full"]
+    networks: [civicnet]
+    depends_on:
+      db-preflight:
+        condition: service_completed_successfully
+    environment:
+      <<: [*oidc-env, *db-env]
+      NODE_ENV:                 ${NODE_ENV:-production}
+      PORT:                     8001
+      LOG_LEVEL:                ${LOG_LEVEL:-info}
+      CORS_ORIGINS:             https://${APP_DOMAIN}
+      WA_SESSION_PATH:          /app/wa-session
+      WA_AUTOSTART:             ${WA_AUTOSTART:-true}
+      WA_ORGANIZATION_ID:       ${WA_ORGANIZATION_ID:-}
+      WA_DEFAULT_CAMPAIGN_CODE: ${WA_DEFAULT_CAMPAIGN_CODE:-}
+    volumes:
+      - wasession:/app/wa-session
+    shm_size: "512mb"
+    security_opt:
+      - seccomp:unconfined
+    labels:
+      traefik.enable: "false"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Frontend · https://DOMINIO/
+  # ───────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Vite inlinea estas variables en el bundle: son de build-time.
+        # Cambiar el dominio exige reconstruir la imagen, no basta reiniciar.
+        #
+        # Rutas relativas al mismo origen: sin CORS y sin cookies de terceros.
+        VITE_SENTIMENT_API_URL:    https://${APP_DOMAIN}/api
+        VITE_SENTIMENT_API_PREFIX: /v1
+        VITE_ALERTS_API_URL:       https://${APP_DOMAIN}/alerts
+        VITE_REPORTS_API_URL:      https://${APP_DOMAIN}/reports
+        VITE_WHATSAPP_API_URL:     ""
+        VITE_API_TIMEOUT_MS:       ${VITE_API_TIMEOUT_MS:-30000}
+        VITE_KEYCLOAK_URL:         https://${AUTH_DOMAIN}
+        VITE_KEYCLOAK_REALM:       ${KC_REALM:-civicpulse}
+        VITE_KEYCLOAK_CLIENT_ID:   ${KC_CLIENT_ID:-civicpulse-frontend}
+        VITE_AUTH_DISABLED:        "false"
+        VITE_BRAND_NAME:           ${VITE_BRAND_NAME:-CivicPulse}
+        VITE_BRAND_SHORT_NAME:     ${VITE_BRAND_SHORT_NAME:-CivicPulse}
+        VITE_BRAND_PRODUCT_NAME:   ${VITE_BRAND_PRODUCT_NAME:-CivicPulse}
+        VITE_BRAND_TAGLINE:        ${VITE_BRAND_TAGLINE:-}
+        VITE_BRAND_PRIMARY_COLOR:  ${VITE_BRAND_PRIMARY_COLOR:-#1F5FA8}
+        VITE_BRAND_ACCENT_COLOR:   ${VITE_BRAND_ACCENT_COLOR:-#E0A22C}
+        VITE_BRAND_SUPPORT_EMAIL:  ${VITE_BRAND_SUPPORT_EMAIL:-}
+        VITE_BRAND_COPYRIGHT:      ${VITE_BRAND_COPYRIGHT:-}
+    image: civicpulse/frontend:${IMAGE_TAG:-1.0.0}
+    container_name: civicpulse-frontend
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [civicnet, traefik]
+    depends_on:
+      sentiment-api:
+        condition: service_started
+    environment:
+      # Mismo origen para todo: connect-src sólo necesita 'self'.
+      CSP_CONNECT_SRC: "'self' https://${AUTH_DOMAIN}"
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK}
+      traefik.http.routers.cp-web.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.cp-web.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.cp-web.tls: "true"
+      traefik.http.routers.cp-web.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      # Prioridad baja: es la ruta que recoge todo lo que no capturaron las de
+      # arriba. Con la misma prioridad se comería /api, /alerts y /reports.
+      traefik.http.routers.cp-web.priority: "1"
+      traefik.http.routers.cp-web.middlewares: cp-web-headers@docker
+      # Cabeceras de seguridad. Si su Traefik ya aplica un middleware global
+      # equivalente, sustituya esta referencia por la suya y borre las cinco
+      # líneas de abajo para no duplicarlas.
+      traefik.http.middlewares.cp-web-headers.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.cp-web-headers.headers.stsIncludeSubdomains: "true"
+      traefik.http.middlewares.cp-web-headers.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.cp-web-headers.headers.frameDeny: "true"
+      traefik.http.middlewares.cp-web-headers.headers.referrerPolicy: strict-origin-when-cross-origin
+      traefik.http.services.cp-web.loadbalancer.server.port: "8080"
+
+volumes:
+  reports:
+  wasession:

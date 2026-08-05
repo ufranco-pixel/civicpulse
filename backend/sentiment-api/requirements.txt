@@ -1,0 +1,37 @@
+# =============================================================================
+# CivicPulse · sentiment-api
+#
+# Versiones fijas. Un rango abierto convierte cada reconstrucción de la imagen
+# en un despliegue con dependencias distintas a las que se probaron.
+# =============================================================================
+
+# ── Servicio HTTP ────────────────────────────────────────────────────────────
+fastapi==0.115.6
+# El extra [standard] trae uvloop, httptools y el reloj de watchfiles.
+uvicorn[standard]==0.34.0
+
+# ── Modelos y configuración ──────────────────────────────────────────────────
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# ── Base de datos ────────────────────────────────────────────────────────────
+sqlalchemy[asyncio]==2.0.36
+# Driver asíncrono exigido por config.py (_require_async_driver).
+asyncpg==0.30.0
+
+# ── Identidad ────────────────────────────────────────────────────────────────
+# El extra [cryptography] es obligatorio: sin él python-jose no puede verificar
+# RS256 y todo token válido se rechazaría.
+python-jose[cryptography]==3.3.0
+
+# ── Clientes y validación ────────────────────────────────────────────────────
+# httpx: JWKS de Keycloak (app/core/auth.py) y llamadas al LLM (services).
+httpx==0.28.1
+# jsonschema: valida la salida del clasificador contra el esquema del prompt.
+jsonschema==4.23.0
+
+# ── Registro ─────────────────────────────────────────────────────────────────
+# structlog es el que usa app/core/logging.py; python-json-logger da el mismo
+# formato JSON a los registradores estándar de uvicorn y de las bibliotecas.
+structlog==24.4.0
+python-json-logger==2.0.7

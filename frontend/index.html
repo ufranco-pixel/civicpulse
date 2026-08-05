@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="description"
+      content="CivicPulse: analisis de conversacion publica digital sobre campanas politicas. No es una encuesta ni predice resultados electorales."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>CivicPulse - Escucha de conversacion publica</title>
+
+    <script>
+      /*
+       * Anti-parpadeo de tema. Se ejecuta ANTES del primer pintado: si el tema
+       * se aplicara desde React, el usuario veria un destello claro antes de
+       * que montara la aplicacion.
+       */
+      (function () {
+        try {
+          var stored = window.localStorage.getItem('cp-theme');
+          var theme =
+            stored && stored !== 'system'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>CivicPulse necesita JavaScript para funcionar.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Comprobacion silenciosa de sesion</title>
+  </head>
+  <body>
+    <!--
+      Keycloak carga esta pagina dentro de un iframe oculto para comprobar si
+      existe sesion sin redirigir la ventana principal. Solo reenvia la URL de
+      respuesta al padre; no debe contener nada mas.
+    -->
+    <script>
+      parent.postMessage(location.href, location.origin);
+    </script>
+  </body>
+</html>

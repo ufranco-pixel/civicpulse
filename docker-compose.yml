@@ -1,0 +1,312 @@
+# =============================================================================
+# CivicPulse · docker-compose.yml
+#
+# Levanta Keycloak, los cuatro microservicios y el frontend.
+#
+# LA BASE DE DATOS ES EXTERNA. Este compose no la gestiona ni la instala: se
+# conecta a la que usted indique en DATABASE_URL.
+#
+#   cp .env.example .env && editar
+#   docker compose up -d --build
+#   docker compose logs -f db-preflight   # verificación de la base
+#
+# Al no haber contenedor de base de datos se pierde el `healthcheck` que
+# encadenaba el arranque. Lo sustituye el servicio `db-preflight`: comprueba
+# conectividad, esquema, particiones y privilegios, y aborta el despliegue si
+# algo impide operar. Los demás servicios esperan a que termine bien.
+# =============================================================================
+
+name: ${COMPOSE_PROJECT_NAME:-civicpulse}
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-oidc-env: &oidc-env
+  OIDC_ISSUER:          ${OIDC_ISSUER}
+  OIDC_JWKS_URI:        ${OIDC_JWKS_URI}
+  OIDC_AUDIENCE:        ${KC_AUDIENCE:-account}
+  AUTH_ORG_CLAIM:       ${AUTH_ORG_CLAIM:-organization_id}
+  AUTH_ROLES_CLIENT:    ${AUTH_ROLES_CLIENT:-civicpulse-frontend}
+
+x-node-common: &node-common
+  restart: unless-stopped
+  logging: *default-logging
+  networks: [civicnet]
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  depends_on:
+    keycloak:
+      condition: service_healthy
+    db-preflight:
+      condition: service_completed_successfully
+
+services:
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Verificación de la base externa. Corre una vez y termina.
+  #
+  # Sustituye al healthcheck que daba el contenedor de PostgreSQL: sin él, los
+  # servicios arrancarían aunque la base no responda y fallarían en la primera
+  # petición con un error opaco.
+  # ───────────────────────────────────────────────────────────────────────────
+  db-preflight:
+    image: postgres:16-alpine
+    container_name: civicpulse-db-preflight
+    logging: *default-logging
+    environment:
+      # psql toma la conexión de aquí. Debe ser la URL síncrona (sin +asyncpg).
+      DATABASE_URL:     ${DATABASE_URL:?defina DATABASE_URL en .env}
+      PGCONNECT_TIMEOUT: 10
+      AUTHOR_PEPPER:    ${CIVICPULSE_AUTHOR_PEPPER:?defina CIVICPULSE_AUTHOR_PEPPER en .env}
+      # true sólo la primera vez, si quiere que el propio arranque instale el
+      # esquema. Con la base ya montada, déjelo en false.
+      DB_AUTO_INSTALL:  ${DB_AUTO_INSTALL:-false}
+      DB_WAIT_ATTEMPTS: ${DB_WAIT_ATTEMPTS:-30}
+    volumes:
+      - ./sql:/sql:ro
+      - ./prompts:/prompts:ro
+      - ./scripts:/scripts:ro
+    entrypoint: ["/bin/sh", "/scripts/db-preflight.sh"]
+    restart: "no"
+    networks: [civicnet]
+    # Permite alcanzar una base que corra en la máquina anfitriona usando
+    # host.docker.internal como host en DATABASE_URL.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Identidad
+  # ───────────────────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: civicpulse-keycloak
+    restart: unless-stopped
+    logging: *default-logging
+    command: ["start-dev", "--import-realm", "--health-enabled=true"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?defina KEYCLOAK_ADMIN_PASSWORD en .env}
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./docs/keycloak:/opt/keycloak/data/import:ro
+      - kcdata:/opt/keycloak/data
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    healthcheck:
+      # Keycloak 25+ expone la salud en el puerto de gestión 9000, no en el 8080.
+      # El compose del sistema base apuntaba al puerto equivocado y el healthcheck
+      # nunca pasaba a healthy, bloqueando a quien dependiera de él.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+    networks: [civicnet]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # API principal
+  # ───────────────────────────────────────────────────────────────────────────
+  sentiment-api:
+    build:
+      context: ./backend/sentiment-api
+    image: civicpulse/sentiment-api:1.0.0
+    container_name: civicpulse-sentiment-api
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      db-preflight:
+        condition: service_completed_successfully
+    environment:
+      # Driver asíncrono y SIN sslmode en la cadena: asyncpg no lo admite.
+      DATABASE_URL:        ${DATABASE_URL_ASYNC:?defina DATABASE_URL_ASYNC en .env}
+      DATABASE_SSL:        ${DATABASE_SSL:-true}
+      DATABASE_SSL_ROOT_CERT: ${DATABASE_SSL_ROOT_CERT:-}
+      POOL_SIZE:           ${DB_POOL_SIZE:-10}
+      MAX_OVERFLOW:        ${DB_MAX_OVERFLOW:-20}
+      # Recicla por debajo del tiempo de inactividad del balanceador del proveedor.
+      POOL_RECYCLE_SEC:    ${DB_POOL_RECYCLE_SEC:-1800}
+      STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-15000}
+      KC_URL:              ${KC_URL}
+      KC_REALM:            ${KC_REALM:-civicpulse}
+      KC_AUDIENCE:         ${KC_AUDIENCE:-account}
+      API_PREFIX:          /v1
+      PORT:                8000
+      LOG_LEVEL:           ${LOG_LEVEL:-info}
+      CORS_ORIGINS:        ${CORS_ORIGINS}
+      AUTH_DISABLED:       "false"
+      CLASSIFIER_ENABLED:       ${CLASSIFIER_ENABLED:-false}
+      LLM_PROVIDER:             ${LLM_PROVIDER:-gemini}
+      # Clave de Google AI Studio. En producción móntela como secreto de Docker
+      # o inyéctela desde el gestor: en la sección environment queda visible
+      # para cualquiera que pueda ejecutar `docker inspect`.
+      GEMINI_API_KEY:           ${GEMINI_API_KEY:?defina GEMINI_API_KEY en .env}
+      GEMINI_MODEL:             ${GEMINI_MODEL:-gemini-flash-lite-latest}
+      GEMINI_BASE_URL:          ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}
+      GEMINI_API_VERSION:       ${GEMINI_API_VERSION:-v1beta}
+      GEMINI_SAFETY_THRESHOLD:  ${GEMINI_SAFETY_THRESHOLD:-BLOCK_NONE}
+      LLM_TIMEOUT_MS:           ${LLM_TIMEOUT_MS:-30000}
+      LLM_API_KEY_REF:          ${LLM_API_KEY_REF:-}
+      CLASSIFIER_BATCH_LIMIT:   ${CLASSIFIER_BATCH_LIMIT:-30}
+      CLASSIFIER_MIN_CONFIDENCE: ${CLASSIFIER_MIN_CONFIDENCE:-0.6}
+    ports:
+      - "${SENTIMENT_API_PORT:-8000}:8000"
+    networks: [civicnet]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Alertas: SSE autenticado + evaluador periódico de reglas
+  # ───────────────────────────────────────────────────────────────────────────
+  alerts-api:
+    <<: *node-common
+    build:
+      context: ./backend/alerts-api
+    image: civicpulse/alerts-api:1.0.0
+    container_name: civicpulse-alerts-api
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      db-preflight:
+        condition: service_completed_successfully
+    environment:
+      <<: *oidc-env
+      NODE_ENV:                 ${NODE_ENV:-production}
+      PORT:                     8003
+      LOG_LEVEL:                ${LOG_LEVEL:-info}
+      DATABASE_URL:             ${DATABASE_URL:?defina DATABASE_URL en .env}
+      DATABASE_SSL:             ${DATABASE_SSL:-true}
+      DATABASE_SSL_REJECT_UNAUTHORIZED: ${DATABASE_SSL_REJECT_UNAUTHORIZED:-false}
+      DATABASE_POOL_MAX:        ${DB_POOL_SIZE:-10}
+      CORS_ORIGINS:             ${CORS_ORIGINS}
+      ALERT_EVAL_ENABLED:       ${ALERT_EVAL_ENABLED:-true}
+      ALERT_EVAL_INTERVAL_SEC:  ${ALERT_EVAL_INTERVAL_SEC:-60}
+      ALERT_EVAL_LOCK_KEY:      ${ALERT_EVAL_LOCK_KEY:-918273645}
+      SSE_HEARTBEAT_MS:         25000
+    ports:
+      - "${ALERTS_API_PORT:-8003}:8003"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Informes PDF
+  # ───────────────────────────────────────────────────────────────────────────
+  reports-api:
+    <<: *node-common
+    build:
+      context: ./backend/reports-api
+    image: civicpulse/reports-api:1.0.0
+    container_name: civicpulse-reports-api
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      db-preflight:
+        condition: service_completed_successfully
+    environment:
+      <<: *oidc-env
+      NODE_ENV:               ${NODE_ENV:-production}
+      PORT:                   8002
+      LOG_LEVEL:              ${LOG_LEVEL:-info}
+      DATABASE_URL:           ${DATABASE_URL:?defina DATABASE_URL en .env}
+      DATABASE_SSL:           ${DATABASE_SSL:-true}
+      DATABASE_SSL_REJECT_UNAUTHORIZED: ${DATABASE_SSL_REJECT_UNAUTHORIZED:-false}
+      DATABASE_POOL_MAX:      ${DB_POOL_SIZE:-10}
+      CORS_ORIGINS:           ${CORS_ORIGINS}
+      REPORTS_STORAGE_DIR:    /app/generated
+      REPORTS_RETENTION_DAYS: ${REPORTS_RETENTION_DAYS:-30}
+    volumes:
+      - reports:/app/generated
+    ports:
+      - "${REPORTS_API_PORT:-8002}:8002"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Bot de WhatsApp (opcional: perfil `whatsapp`)
+  # ───────────────────────────────────────────────────────────────────────────
+  whatsapp-bot:
+    <<: *node-common
+    build:
+      context: ./backend/whatsapp-bot
+    image: civicpulse/whatsapp-bot:1.0.0
+    container_name: civicpulse-whatsapp-bot
+    profiles: ["whatsapp", "full"]
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      db-preflight:
+        condition: service_completed_successfully
+    environment:
+      <<: *oidc-env
+      NODE_ENV:                 ${NODE_ENV:-production}
+      PORT:                     8001
+      LOG_LEVEL:                ${LOG_LEVEL:-info}
+      DATABASE_URL:             ${DATABASE_URL:?defina DATABASE_URL en .env}
+      DATABASE_SSL:             ${DATABASE_SSL:-true}
+      DATABASE_SSL_REJECT_UNAUTHORIZED: ${DATABASE_SSL_REJECT_UNAUTHORIZED:-false}
+      DATABASE_POOL_MAX:        ${DB_POOL_SIZE:-10}
+      CORS_ORIGINS:             ${CORS_ORIGINS}
+      WA_SESSION_PATH:          /app/wa-session
+      WA_AUTOSTART:             ${WA_AUTOSTART:-true}
+      WA_ORGANIZATION_ID:       ${WA_ORGANIZATION_ID:-}
+      WA_DEFAULT_CAMPAIGN_CODE: ${WA_DEFAULT_CAMPAIGN_CODE:-}
+    volumes:
+      - wasession:/app/wa-session
+    ports:
+      - "${WHATSAPP_BOT_PORT:-8001}:8001"
+    # Chromium headless necesita más memoria compartida que el default de 64 MB.
+    shm_size: "512mb"
+    security_opt:
+      - seccomp:unconfined
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Frontend
+  # ───────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Vite inlinea estas variables en el bundle: deben pasarse en build-time,
+        # no en runtime. El Dockerfile del sistema base olvidaba varias y los
+        # servicios quedaban apuntando a localhost en producción.
+        VITE_SENTIMENT_API_URL:    ${VITE_SENTIMENT_API_URL}
+        VITE_SENTIMENT_API_PREFIX: ${VITE_SENTIMENT_API_PREFIX:-/v1}
+        VITE_ALERTS_API_URL:       ${VITE_ALERTS_API_URL}
+        VITE_REPORTS_API_URL:      ${VITE_REPORTS_API_URL}
+        VITE_WHATSAPP_API_URL:     ${VITE_WHATSAPP_API_URL}
+        VITE_API_TIMEOUT_MS:       ${VITE_API_TIMEOUT_MS:-30000}
+        VITE_KEYCLOAK_URL:         ${VITE_KEYCLOAK_URL}
+        VITE_KEYCLOAK_REALM:       ${VITE_KEYCLOAK_REALM:-civicpulse}
+        VITE_KEYCLOAK_CLIENT_ID:   ${VITE_KEYCLOAK_CLIENT_ID:-civicpulse-frontend}
+        VITE_AUTH_DISABLED:        ${VITE_AUTH_DISABLED:-false}
+        VITE_BRAND_NAME:           ${VITE_BRAND_NAME:-CivicPulse}
+        VITE_BRAND_SHORT_NAME:     ${VITE_BRAND_SHORT_NAME:-CivicPulse}
+        VITE_BRAND_PRODUCT_NAME:   ${VITE_BRAND_PRODUCT_NAME:-CivicPulse}
+        VITE_BRAND_TAGLINE:        ${VITE_BRAND_TAGLINE:-}
+        VITE_BRAND_PRIMARY_COLOR:  ${VITE_BRAND_PRIMARY_COLOR:-#1F5FA8}
+        VITE_BRAND_ACCENT_COLOR:   ${VITE_BRAND_ACCENT_COLOR:-#E0A22C}
+        VITE_BRAND_SUPPORT_EMAIL:  ${VITE_BRAND_SUPPORT_EMAIL:-}
+        VITE_BRAND_COPYRIGHT:      ${VITE_BRAND_COPYRIGHT:-}
+    image: civicpulse/frontend:1.0.0
+    container_name: civicpulse-frontend
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      sentiment-api:
+        condition: service_started
+    environment:
+      # Se sustituyen en nginx.conf mediante envsubst al arrancar: permiten
+      # cambiar los orígenes del CSP sin reconstruir la imagen.
+      CSP_CONNECT_SRC: "${VITE_SENTIMENT_API_URL} ${VITE_ALERTS_API_URL} ${VITE_REPORTS_API_URL} ${VITE_WHATSAPP_API_URL} ${VITE_KEYCLOAK_URL}"
+    ports:
+      - "${FRONTEND_PORT:-8090}:8080"
+    networks: [civicnet]
+
+networks:
+  civicnet:
+    driver: bridge
+
+volumes:
+  kcdata:
+  reports:
+  wasession:

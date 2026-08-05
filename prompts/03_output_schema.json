@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civicpulse.local/schemas/classification/v1.json",
+  "title": "Salida del clasificador de comentarios políticos",
+  "description": "Contrato de salida de civic-comment-classifier v1. Se valida con jsonschema en app/services/classifier.py ANTES de persistir. Una respuesta que no valide se reintenta una vez; si vuelve a fallar se registra con schema_valid=false y cuenta en la métrica schema_valid_rate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sentiment", "stances", "emotions", "topics", "entities", "risk_flags", "overall_confidence"],
+
+  "properties": {
+
+    "sentiment": {
+      "type": "object",
+      "description": "Carga emocional del texto. Eje INDEPENDIENTE de la postura.",
+      "additionalProperties": false,
+      "required": ["label", "score", "confidence"],
+      "properties": {
+        "label": { "enum": ["positive", "neutral", "negative", "mixed"] },
+        "score": {
+          "type": "number", "minimum": -1, "maximum": 1,
+          "description": "Polaridad continua. Los promedios del tablero se calculan sobre esta columna, no sobre la etiqueta. Coherencia obligatoria: label=positive exige score > -0.15; label=negative exige score < 0.15."
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "probabilities": {
+          "type": "object",
+          "description": "Distribución completa. Necesaria para recalibrar umbrales sin reprocesar. Debe sumar 1.0 +/- 0.02.",
+          "additionalProperties": false,
+          "properties": {
+            "positive": { "type": "number", "minimum": 0, "maximum": 1 },
+            "neutral":  { "type": "number", "minimum": 0, "maximum": 1 },
+            "negative": { "type": "number", "minimum": 0, "maximum": 1 },
+            "mixed":    { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
+
+    "stances": {
+      "type": "array",
+      "description": "Postura hacia cada contendiente mencionado. Puede estar vacío. Un mismo texto puede tener posturas de signo opuesto hacia actores distintos.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["contender_id", "stance", "score", "confidence"],
+        "properties": {
+          "contender_id": {
+            "type": "string", "format": "uuid",
+            "description": "Debe existir en el bloque de actores del prompt. classifier.py rechaza los que no."
+          },
+          "stance": { "enum": ["favor", "lean_favor", "neutral", "lean_against", "against", "undecided", "unclear"] },
+          "score": { "type": "number", "minimum": -1, "maximum": 1 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "evidence": {
+            "type": ["string", "null"], "maxLength": 120,
+            "description": "Fragmento literal que sustenta la atribución. Sin esto la postura no es auditable; classifier.py verifica que sea subcadena aproximada del texto."
+          }
+        }
+      }
+    },
+
+    "emotions": {
+      "type": "array",
+      "description": "Multietiqueta. Sólo emociones con intensidad > 0.2. Exactamente una debe llevar is_dominant=true si el arreglo no está vacío.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "score"],
+        "properties": {
+          "code": {
+            "enum": ["joy", "trust", "fear", "surprise", "sadness", "disgust", "anger", "anticipation",
+                     "indignation", "hope", "distrust", "apathy"],
+            "description": "Las cuatro últimas son extensiones cívicas: indignation (enojo moral, predice movilización), hope (expectativa de cambio), distrust (descree, no teme), apathy (desafección, predice abstención)."
+          },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "is_dominant": { "type": "boolean", "default": false }
+        }
+      }
+    },
+
+    "intent": {
+      "type": ["object", "null"],
+      "description": "Qué HACE el autor con el comentario, no qué siente.",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": {
+          "enum": ["opinion", "support", "criticism", "question", "demand", "complaint", "report",
+                   "mobilization", "disinformation", "humor", "spam", "threat", "other"]
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "topics": {
+      "type": "array",
+      "description": "Temas de la agenda pública presentes en el texto. Como máximo uno con is_primary=true.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "relevance"],
+        "properties": {
+          "code": {
+            "enum": ["security", "economy", "employment", "health", "education", "corruption",
+                     "infrastructure", "environment", "social_programs", "human_rights", "gender",
+                     "migration", "energy", "agriculture", "technology", "foreign_policy", "fiscal",
+                     "electoral_process", "campaign_events", "polls", "alliances", "campaign_finance",
+                     "integrity", "competence", "empathy", "leadership", "trajectory", "personal_life",
+                     "other"]
+          },
+          "relevance": { "type": "number", "minimum": 0, "maximum": 1 },
+          "sentiment": {
+            "type": ["number", "null"], "minimum": -1, "maximum": 1,
+            "description": "Sentimiento hacia ESE tema en concreto. Puede diferir del sentimiento global del texto."
+          },
+          "is_primary": { "type": "boolean", "default": false }
+        }
+      }
+    },
+
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "type"],
+        "properties": {
+          "text": { "type": "string", "maxLength": 200, "description": "Tal como aparece en el contenido." },
+          "normalized": {
+            "type": ["string", "null"], "maxLength": 200,
+            "description": "Forma canónica en minúsculas sin acentos. Es la clave de agrupación de los rankings de entidades."
+          },
+          "type": {
+            "enum": ["PERSON", "PARTY", "COALITION", "ORG", "GOV_BODY", "LOCATION", "POLICY",
+                     "EVENT", "MEDIA", "SLOGAN", "MONEY", "PERCENT", "DATE", "MISC"]
+          },
+          "contender_id": { "type": ["string", "null"], "format": "uuid" },
+          "sentiment": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
+          "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "mention_count": { "type": "integer", "minimum": 1, "default": 1 }
+        }
+      }
+    },
+
+    "risk_flags": {
+      "type": "array",
+      "description": "Finalidad: proteger al equipo y priorizar respuesta. NO debe usarse para perfilar ni tomar represalias contra autores. Las banderas graves exigen revisión humana antes de cualquier acción.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "score"],
+        "properties": {
+          "code": {
+            "enum": ["insult", "hate_speech", "threat_violence", "doxxing", "sexual_harassment",
+                     "gender_violence", "misinformation", "disinformation", "manipulated_media",
+                     "coordinated_inauth", "electoral_crime", "self_harm", "spam_bot"]
+          },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "target_contender_id": { "type": ["string", "null"], "format": "uuid" },
+          "evidence": { "type": ["string", "null"], "maxLength": 120 }
+        }
+      }
+    },
+
+    "sarcasm_score": {
+      "type": ["number", "null"], "minimum": 0, "maximum": 1,
+      "description": "Probabilidad de ironía. El clasificador NO debe invertir el sentimiento por su cuenta: reporta la señal y el pipeline decide. El umbral de exclusión (0.6) vive en la base de datos para poder recalibrarlo sin reprocesar."
+    },
+
+    "subjectivity_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+
+    "toxicity_score": {
+      "type": ["number", "null"], "minimum": 0, "maximum": 1,
+      "description": "Agresividad del lenguaje. Alimenta el índice de riesgo de crisis y las alertas de protección al equipo."
+    },
+
+    "detected_language": {
+      "type": ["string", "null"], "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,5})?$"
+    },
+
+    "summary": { "type": ["string", "null"], "maxLength": 300 },
+
+    "overall_confidence": {
+      "type": "number", "minimum": 0, "maximum": 1,
+      "description": "Confianza global. Por debajo de 0.55 la base de datos marca la inferencia para revisión humana automáticamente."
+    },
+
+    "notes": {
+      "type": ["string", "null"], "maxLength": 500,
+      "description": "Observaciones del clasificador: jerga desconocida, texto truncado, ambigüedad irreducible."
+    }
+  }
+}
