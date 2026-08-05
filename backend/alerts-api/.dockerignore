@@ -1,0 +1,26 @@
+# Nunca al contexto de build: node_modules del host trae binarios compilados
+# para otra plataforma (Windows/macOS) que romperían la imagen Alpine.
+node_modules
+npm-debug.log*
+
+# Secretos. Un .env copiado a la imagen queda en el historial de capas y es
+# recuperable con `docker history`, aunque después se borre.
+.env
+.env.*
+!.env.example
+
+# Ruido
+.git
+.gitignore
+*.md
+.DS_Store
+coverage
+.nyc_output
+test
+tests
+*.test.js
+
+# Datos locales de ejecución
+data
+generated
+wa-session
