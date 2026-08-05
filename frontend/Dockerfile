@@ -64,16 +64,32 @@ ENV VITE_SENTIMENT_API_URL=$VITE_SENTIMENT_API_URL \
     VITE_BRAND_ACCENT_COLOR=$VITE_BRAND_ACCENT_COLOR \
     VITE_BRAND_SUPPORT_EMAIL=$VITE_BRAND_SUPPORT_EMAIL \
     VITE_BRAND_COPYRIGHT=$VITE_BRAND_COPYRIGHT \
-    VITE_BRAND_DISCLAIMER=$VITE_BRAND_DISCLAIMER \
-    NODE_ENV=production
+    VITE_BRAND_DISCLAIMER=$VITE_BRAND_DISCLAIMER
+
+# OJO: aqui NO va NODE_ENV=production.
+#
+# Con NODE_ENV=production, npm omite las devDependencies aunque no se le pase
+# --omit=dev. Y vite, @vitejs/plugin-react y todo el tooling de compilacion son
+# devDependencies: sin ellos `npm run build` falla con «vite: not found».
+#
+# Tampoco hace falta: `vite build` compila en modo produccion por si mismo, y
+# la etapa 2 (nginx) sirve estaticos, no ejecuta Node.
 
 # Las dependencias se instalan antes de copiar el codigo para aprovechar la
 # cache de capas: cambiar un componente no reinstala node_modules.
 COPY package.json package-lock.json* ./
-RUN npm ci --no-audit --fund=false || npm install --no-audit --fund=false
+# --include=dev explicito: deja documentado que esta etapa NECESITA el tooling,
+# y protege frente a un NODE_ENV heredado del entorno de build.
+RUN npm ci --include=dev --no-audit --fund=false \
+ || npm install --include=dev --no-audit --fund=false
 
 COPY . .
 RUN npm run build
+
+# Comprobacion de que la compilacion produjo algo. Sin esto, un `vite build`
+# que falle en silencio genera una imagen que arranca y sirve un 404.
+RUN test -f dist/index.html && test -d dist/assets \
+ && echo "build ok: $(find dist -type f | wc -l) archivos"
 
 # ── Etapa 2: servicio ────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runtime
