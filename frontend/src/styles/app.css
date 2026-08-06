@@ -61,24 +61,37 @@
   /* Empuja el bloque al fondo del rail sin depender de cuantas secciones
      esten visibles, que ahora cambia segun los datos que haya. */
   margin-top: auto;
-  display: flex; flex-direction: column; align-items: center;
+  /* En fila: logo pequeno a la izquierda y el nombre al lado. El rail mide
+     236px con var(--sp-3) de relleno a cada lado, asi que aqui caben unos
+     212px: 34 del logo + 8 de hueco + ~170 para el texto en dos lineas. */
+  display: flex; flex-direction: row; align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-4) var(--sp-2) var(--sp-1);
+  padding: var(--sp-3) var(--sp-1) var(--sp-1);
   border-top: 1px solid var(--c-border);
   color: var(--c-text-muted); text-decoration: none;
-  transition: color .15s ease, opacity .15s ease;
+  transition: color .15s ease;
 }
 .cp-rail-oeste:hover { color: var(--c-text); }
 .cp-rail-oeste:hover .cp-rail-oeste-logo { opacity: 1; }
 .cp-rail-oeste-logo {
-  width: 100%; max-width: 130px; height: auto;
-  opacity: .85; transition: opacity .15s ease;
+  /* flex-shrink: 0 es necesario: sin el, el texto de dos lineas comprime el
+     logo y el circulo se vuelve ovalado. */
+  width: 34px; height: 34px; flex: 0 0 34px;
+  opacity: .9; transition: opacity .15s ease;
 }
 .cp-rail-oeste-texto {
-  font-size: var(--fs-2xs); line-height: 1.35; text-align: center;
+  font-size: 0.75rem; line-height: 1.25;
+  /* min-width: 0 permite que el texto se encoja dentro del flex en lugar de
+     desbordar el rail, que es lo que hace un hijo flex por defecto.
+     Con 236px de rail menos rellenos y el logo, aqui quedan ~162px; la linea
+     mas larga («Organización de Estudios») mide unos 135px a este tamano. */
+  min-width: 0; overflow-wrap: break-word;
 }
-.cp-rail-oeste.is-compact { padding: var(--sp-3) 0 var(--sp-1); }
-.cp-rail-oeste.is-compact .cp-rail-oeste-logo { max-width: 34px; }
+.cp-rail-oeste.is-compact {
+  flex-direction: column; justify-content: center;
+  padding: var(--sp-3) 0 var(--sp-1);
+}
+.cp-rail-oeste.is-compact .cp-rail-oeste-logo { width: 30px; height: 30px; flex-basis: 30px; }
 .cp-logo {
   display: grid; place-items: center;
   width: 32px; height: 32px; flex: 0 0 32px;
@@ -416,7 +429,7 @@
     border-top: 0; border-left: 1px solid var(--c-border);
     flex: 0 0 auto;
   }
-  .cp-rail-oeste-logo { max-width: 34px; }
+  .cp-rail-oeste-logo { width: 30px; height: 30px; flex-basis: 30px; }
   .cp-rail-oeste-texto { display: none; }
   .cp-nav { flex-direction: row; }
   .cp-content { padding: var(--sp-4) var(--sp-3); }
