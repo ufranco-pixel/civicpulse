@@ -106,7 +106,20 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 # nginx escribe el pid, la config generada y sus caches; sin estos permisos el
 # contenedor sin privilegios no arranca.
-RUN sed -i 's|pid        /var/run/nginx.pid;|pid /tmp/nginx.pid;|' /etc/nginx/nginx.conf \
+#
+# El pid se mueve a /tmp con una expresion que NO depende de la ruta ni del
+# espaciado concretos: nginx 1.27 usa `pid /run/nginx.pid;` y versiones
+# anteriores `pid        /var/run/nginx.pid;`. Un sed atado a una de las dos
+# formas no sustituye nada en la otra, y el contenedor muere al arrancar con
+# «open() "/run/nginx.pid" failed (13: Permission denied)».
+#
+# El grep posterior es deliberado: si la sustitucion no aplica, falla el BUILD
+# en lugar de generar una imagen que reinicia en bucle en produccion.
+RUN sed -i -E 's#^[[:space:]]*pid[[:space:]]+[^;]+;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
+ && grep -qx 'pid /tmp/nginx.pid;' /etc/nginx/nginx.conf \
+ # La directiva `user` sobra al correr sin privilegios y solo genera un aviso
+ # en cada arranque.
+ && sed -i -E 's#^[[:space:]]*user[[:space:]]+[^;]+;##' /etc/nginx/nginx.conf \
  && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /etc/nginx/conf.d \
  && chmod -R g+w /etc/nginx/conf.d
 

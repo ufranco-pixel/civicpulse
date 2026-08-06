@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     # ── Servicio HTTP ────────────────────────────────────────────────────────
     API_PREFIX: str = Field(default="/v1")
     PORT: int = Field(default=8000, ge=1, le=65535)
+    # Se normaliza a mayusculas antes de validar: `info` en minuscula es la
+    # forma habitual en un .env y en el resto de servicios del stack, y hacer
+    # que el arranque falle por eso es una trampa sin ninguna ventaja.
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     CORS_ORIGINS: str = Field(
         default="http://localhost:5173",
@@ -111,6 +114,16 @@ class Settings(BaseSettings):
     # Umbral por defecto cuando la campaña no define el suyo en
     # civic.campaign_pipeline.min_confidence, que tiene prioridad.
     CLASSIFIER_MIN_CONFIDENCE: float = Field(default=0.6, ge=0.0, le=1.0)
+
+    @field_validator("LOG_LEVEL", mode="before")
+    @classmethod
+    def _normalize_log_level(cls, v: object) -> object:
+        """Acepta `info`, `Info` o `INFO` indistintamente.
+
+        mode="before" es necesario: sin el, pydantic valida el Literal antes de
+        que este metodo pueda tocar el valor y rechaza la minuscula.
+        """
+        return v.upper() if isinstance(v, str) else v
 
     @field_validator("API_PREFIX")
     @classmethod
