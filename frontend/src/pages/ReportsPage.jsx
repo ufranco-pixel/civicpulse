@@ -85,9 +85,6 @@ export function ReportsPage() {
       <form className="tile stack" onSubmit={generate}>
         <div className="tile-head"><h3 className="tile-title"><FileText size={15} aria-hidden="true" /> Nuevo informe</h3></div>
 
-        <p className="disclaimer">
-          {brand.disclaimer.full} La nota metodologica se incluye siempre en el documento y no puede desmarcarse.
-        </p>
 
         <label className="field" style={{ maxWidth: 220 }}>
           <span className="field-label">Periodo (dias)</span>

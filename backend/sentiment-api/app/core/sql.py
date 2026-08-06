@@ -22,6 +22,11 @@ M = TypeVar("M", bound=BaseModel)
 # una petición sin fechas recorrería todas las particiones del histórico.
 MAX_WINDOW_DAYS = 400
 
+# Tope cuando se pide explícitamente «todo el periodo». Es más alto porque en
+# ese caso el arranque NO es arbitrario: sale de la fecha del contenido más
+# antiguo de la campaña, así que la ventana se ajusta sola a los datos reales.
+MAX_ALL_TIME_DAYS = 1825  # 5 años
+
 
 async def fetch_all(
     session: AsyncSession, sql: str, params: dict[str, Any] | None = None
@@ -69,10 +74,36 @@ def not_found(what: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=what)
 
 
+async def campaign_data_start(session: AsyncSession, code: str) -> datetime | None:
+    """Fecha del contenido más antiguo de la campaña, o None si no hay ninguno.
+
+    Es lo que da sentido a la opción «todo el periodo»: en vez de inventar una
+    ventana fija se acota al rango que la campaña realmente cubre, de modo que
+    la poda de particiones sigue funcionando.
+
+    No se usa `campaigns.starts_on` a propósito: es opcional y en la práctica
+    suele venir vacío, además de que el contenido cargado puede ser anterior al
+    arranque formal de la campaña. La fecha del dato es el único límite que no
+    miente.
+
+    Se consulta a través de `civic_api.inferences`, no de las tablas base, para
+    que RLS aplique igual que en el listado.
+    """
+    value = await fetch_scalar(
+        session,
+        "SELECT min(published_at) FROM civic_api.inferences WHERE campaign_code = :code",
+        {"code": code},
+    )
+    if value is None:
+        return None
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
 def resolve_window(
     date_from: datetime | None,
     date_to: datetime | None,
     default_days: int = 30,
+    max_days: int = MAX_WINDOW_DAYS,
 ) -> tuple[datetime, datetime]:
     """Rango de `published_at` con valores por defecto.
 
@@ -94,10 +125,10 @@ def resolve_window(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="date_from no puede ser posterior a date_to.",
         )
-    if (end - start).days > MAX_WINDOW_DAYS:
+    if (end - start).days > max_days:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"La ventana no puede exceder {MAX_WINDOW_DAYS} días.",
+            detail=f"La ventana no puede exceder {max_days} días.",
         )
     return start, end
 

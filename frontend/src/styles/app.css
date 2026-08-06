@@ -55,6 +55,30 @@
 
 .cp-rail-perfil.is-compact { padding: var(--sp-1) 0 var(--sp-3); }
 .cp-rail-perfil.is-compact .cp-rail-foto { width: 34px; height: 34px; border-width: 2px; }
+
+/* ── Firma de oeste al pie del rail ─────────────────────────────────────── */
+.cp-rail-oeste {
+  /* Empuja el bloque al fondo del rail sin depender de cuantas secciones
+     esten visibles, que ahora cambia segun los datos que haya. */
+  margin-top: auto;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-2) var(--sp-1);
+  border-top: 1px solid var(--c-border);
+  color: var(--c-text-muted); text-decoration: none;
+  transition: color .15s ease, opacity .15s ease;
+}
+.cp-rail-oeste:hover { color: var(--c-text); }
+.cp-rail-oeste:hover .cp-rail-oeste-logo { opacity: 1; }
+.cp-rail-oeste-logo {
+  width: 100%; max-width: 130px; height: auto;
+  opacity: .85; transition: opacity .15s ease;
+}
+.cp-rail-oeste-texto {
+  font-size: var(--fs-2xs); line-height: 1.35; text-align: center;
+}
+.cp-rail-oeste.is-compact { padding: var(--sp-3) 0 var(--sp-1); }
+.cp-rail-oeste.is-compact .cp-rail-oeste-logo { max-width: 34px; }
 .cp-logo {
   display: grid; place-items: center;
   width: 32px; height: 32px; flex: 0 0 32px;
@@ -384,6 +408,16 @@
   }
   .cp-rail-perfil .cp-rail-foto { width: 34px; height: 34px; border-width: 2px; }
   .cp-rail-perfil-texto { display: none; }
+  /* En la barra horizontal `margin-top: auto` no empuja nada: el equivalente
+     es `margin-left: auto`, que lo manda al extremo derecho. */
+  .cp-rail-oeste {
+    margin-top: 0; margin-left: auto;
+    padding: 0 0 0 var(--sp-3);
+    border-top: 0; border-left: 1px solid var(--c-border);
+    flex: 0 0 auto;
+  }
+  .cp-rail-oeste-logo { max-width: 34px; }
+  .cp-rail-oeste-texto { display: none; }
   .cp-nav { flex-direction: row; }
   .cp-content { padding: var(--sp-4) var(--sp-3); }
   .cp-toasts { left: var(--sp-3); right: var(--sp-3); max-width: none; }

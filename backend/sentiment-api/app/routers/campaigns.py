@@ -86,7 +86,7 @@ async def get_campaign(ctx: Ctx, code: CampaignCode) -> CampaignSummary:
 async def get_overview(
     ctx: Ctx,
     code: CampaignCode,
-    days: Annotated[int, Query(ge=1, le=365)] = 30,
+    days: Annotated[int, Query(ge=1, le=1825)] = 30,
 ) -> CampaignOverview:
     row = await fetch_one(
         ctx.session,
@@ -116,7 +116,7 @@ async def get_overview(
 async def get_timeseries(
     ctx: Ctx,
     code: CampaignCode,
-    days: Annotated[int, Query(ge=1, le=365)] = 30,
+    days: Annotated[int, Query(ge=1, le=1825)] = 30,
     granularity: Literal["day", "week", "month"] = "day",
     source_id: UUID | None = None,
 ) -> list[TimeseriesPoint]:
@@ -149,7 +149,7 @@ async def get_timeseries(
 async def get_contenders(
     ctx: Ctx,
     code: CampaignCode,
-    days: Annotated[int, Query(ge=1, le=365)] = 14,
+    days: Annotated[int, Query(ge=1, le=1825)] = 14,
 ) -> list[ContenderScore]:
     rows = await fetch_all(
         ctx.session,
@@ -176,7 +176,7 @@ async def get_contenders(
 async def get_topics(
     ctx: Ctx,
     code: CampaignCode,
-    days: Annotated[int, Query(ge=1, le=365)] = 14,
+    days: Annotated[int, Query(ge=1, le=1825)] = 14,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> list[TopicAgendaItem]:
     rows = await fetch_all(
@@ -298,7 +298,7 @@ async def get_entities(
 async def get_emotions(
     ctx: Ctx,
     code: CampaignCode,
-    days: Annotated[int, Query(ge=1, le=365)] = 14,
+    days: Annotated[int, Query(ge=1, le=1825)] = 14,
 ) -> list[EmotionAggregate]:
     campaign = await assert_campaign_visible(ctx.session, code)
 

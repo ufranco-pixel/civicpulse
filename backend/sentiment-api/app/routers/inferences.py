@@ -17,6 +17,8 @@ from fastapi import APIRouter, Depends, Path, Query, status
 from app.core.auth import ROLE_ANALYST, require_min_role
 from app.core.context import Ctx
 from app.core.sql import (
+    MAX_ALL_TIME_DAYS,
+    campaign_data_start,
     execute,
     fetch_all,
     fetch_one,
@@ -140,7 +142,22 @@ async def list_inferences(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
 ) -> Page[InferenceListItem]:
-    start, end = resolve_window(date_from, date_to, default_days=30)
+    # Sin `date_from` explícito el listado cubre TODO el periodo de la campaña.
+    #
+    # Antes caía en una ventana de 30 días y eso confundía de verdad: con 70
+    # comentarios cargados a lo largo de varios meses, la tabla mostraba 32 y
+    # el total decía 32. No parecía un filtro, parecía que faltaban datos.
+    #
+    # El arranque sale del contenido más antiguo de la campaña, no de una
+    # constante: la ventana se ajusta a los datos y las particiones se siguen
+    # podando. Si la campaña aún no tiene nada, `campaign_data_start` devuelve
+    # None y `resolve_window` vuelve a su comportamiento normal.
+    if date_from is None:
+        date_from = await campaign_data_start(ctx.session, code)
+
+    start, end = resolve_window(
+        date_from, date_to, default_days=30, max_days=MAX_ALL_TIME_DAYS
+    )
 
     clauses, params = _build_filters(
         sentiment, intent, source_type, contender_id, topic, min_confidence, needs_review, q

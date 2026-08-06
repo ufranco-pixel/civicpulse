@@ -9,15 +9,13 @@ import { createContext, useContext, useMemo, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Activity, AlertTriangle, BarChart3, Ban, ChevronLeft, ChevronRight, ClipboardCheck,
-  FileText, Gauge, LayoutDashboard, MessageSquareText, Radio, Settings,
-  Users, WifiOff,
+  FileText, LayoutDashboard, MessageSquareText, Settings, Users,
 } from 'lucide-react';
 import { brand } from '../config/brand.js';
 import { useCampaign } from '../hooks/useCampaign.js';
 import { useAlertStream } from '../hooks/useAlertStream.js';
 import { useAvailableModules } from '../hooks/useAvailableModules.js';
 import { useResponsive } from '../hooks/useResponsive.js';
-import CampaignSelector from './CampaignSelector.jsx';
 import UserMenu from './UserMenu.jsx';
 
 const LiveAlertsContext = createContext(null);
@@ -38,21 +36,6 @@ const NAV = [
   { to: '/informes',      label: 'Informes',      icon: FileText,           module: 'reports' },
   { to: '/ajustes',       label: 'Ajustes',       icon: Settings,           module: 'settings' },
 ];
-
-function ConnectionIndicator({ connected, status, unread }) {
-  return (
-    <span
-      className={`cp-conn ${connected ? 'cp-conn-on' : 'cp-conn-off'}`}
-      title={connected
-        ? 'Conectado al stream de alertas en tiempo real'
-        : `Sin conexion en vivo (${status}). Las alertas siguen apareciendo al recargar el listado.`}
-    >
-      {connected ? <Radio size={13} aria-hidden="true" /> : <WifiOff size={13} aria-hidden="true" />}
-      <span className="cp-conn-text">{connected ? 'en vivo' : 'sin conexion'}</span>
-      {unread > 0 && <span className="cp-conn-count">{unread > 99 ? '99+' : unread}</span>}
-    </span>
-  );
-}
 
 export function Layout() {
   const { campaign, code, inBlackout } = useCampaign();
@@ -123,13 +106,31 @@ export function Layout() {
               {!collapsed && <span>Contraer</span>}
             </button>
           )}
+
+          {/* Firma de oeste al pie del rail. `margin-top: auto` en el CSS la
+              empuja abajo del todo sea cual sea el numero de secciones
+              visibles, que ahora varia segun los datos que haya. */}
+          <a
+            className={`cp-rail-oeste ${railCollapsed ? 'is-compact' : ''}`}
+            href="https://oesteinvestgroup.com/#!/es"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Organización de Estudios del Territorio"
+          >
+            <img src="/oeste-logo.svg" alt="oeste" className="cp-rail-oeste-logo" />
+            {!railCollapsed && (
+              <span className="cp-rail-oeste-texto">
+                Organización de Estudios
+                <br />
+                del Territorio
+              </span>
+            )}
+          </a>
         </aside>
 
         <div className="cp-main">
           <header className="cp-header">
-            <CampaignSelector />
             <div className="spacer" />
-            <ConnectionIndicator connected={live.connected} status={live.status} unread={live.unread} />
             <UserMenu />
           </header>
 
@@ -148,13 +149,8 @@ export function Layout() {
           </main>
 
           <footer className="cp-footer">
-            <Gauge size={13} aria-hidden="true" />
-            <span>{brand.disclaimer.full}</span>
             <div className="spacer" />
             <span className="text-subtle">{brand.copyright}</span>
-            {brand.supportEmail && (
-              <a href={`mailto:${brand.supportEmail}`} className="text-subtle">{brand.supportEmail}</a>
-            )}
           </footer>
         </div>
       </div>

@@ -6,13 +6,12 @@
  * bloque entero se atenua y las tarjetas dejan de mostrar deltas.
  */
 import { useState } from 'react';
-import { Activity, AlertTriangle, Radio, ServerCrash } from 'lucide-react';
+import { Activity, AlertTriangle, ServerCrash } from 'lucide-react';
 import { useCampaign } from '../hooks/useCampaign.js';
 import { useApi } from '../hooks/useApi.js';
 import { getCrisis, getOverview, getTimeseries, getTopics } from '../services/campaigns.service.js';
-import { brand } from '../config/brand.js';
 import { formatDateTime, formatNumber } from '../config/format.js';
-import PageHeader from '../components/PageHeader.jsx';
+import PageHeader, { ALL_TIME, periodLabel, resolveDays } from '../components/PageHeader.jsx';
 import MetricCard from '../components/MetricCard.jsx';
 import SentimentDonut from '../components/SentimentDonut.jsx';
 import TimeSeriesChart from '../components/TimeSeriesChart.jsx';
@@ -21,20 +20,18 @@ import CrisisGauge from '../components/CrisisGauge.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { SkeletonGrid, SkeletonTile } from '../components/SkeletonTile.jsx';
-import { useLiveAlerts } from '../components/Layout.jsx';
 
 export function OverviewPage() {
   const { code, campaign, loading: campaignLoading } = useCampaign();
-  const [days, setDays] = useState(30);
-  const live = useLiveAlerts();
+  const [days, setDays] = useState(ALL_TIME);
 
   const overview = useApi(
-    ({ signal }) => getOverview(code, { days }, { signal }),
+    ({ signal }) => getOverview(code, { days: resolveDays(days) }, { signal }),
     [code, days],
     { enabled: Boolean(code) },
   );
   const series = useApi(
-    ({ signal }) => getTimeseries(code, { days }, { signal }),
+    ({ signal }) => getTimeseries(code, { days: resolveDays(days) }, { signal }),
     [code, days],
     { enabled: Boolean(code) },
   );
@@ -44,7 +41,7 @@ export function OverviewPage() {
     { enabled: Boolean(code) },
   );
   const topics = useApi(
-    ({ signal }) => getTopics(code, { days, limit: 8 }, { signal }),
+    ({ signal }) => getTopics(code, { days: resolveDays(days), limit: 8 }, { signal }),
     [code, days],
     { enabled: Boolean(code) },
   );
@@ -65,17 +62,11 @@ export function OverviewPage() {
     <div className="stack animate-in">
       <PageHeader
         title={campaign ? campaign.name : 'Resumen'}
-        description={`Conversacion publica de los ultimos ${days} dias${data?.last_updated ? ` · actualizado ${formatDateTime(data.last_updated)}` : ''}`}
+        description={`Conversacion publica de ${periodLabel(days)}${data?.last_updated ? ` · actualizado ${formatDateTime(data.last_updated)}` : ''}`}
         days={days}
         onDaysChange={setDays}
         onReload={reloadAll}
-      >
-        {live.connected && (
-          <span className="pill cp-conn-on"><Radio size={11} aria-hidden="true" /> {live.unread} en vivo</span>
-        )}
-      </PageHeader>
-
-      <p className="disclaimer">{brand.disclaimer.long}</p>
+      />
 
       {overview.error ? (
         <ErrorState error={overview.error} onRetry={overview.reload} />
@@ -136,12 +127,6 @@ export function OverviewPage() {
             <MetricCard
               metricCode="toxicity_avg"
               value={data.avg_toxicity}
-              sampleSize={data.total_mentions}
-              isReliable={reliable}
-            />
-            <MetricCard
-              metricCode="confidence_avg"
-              value={data.avg_confidence}
               sampleSize={data.total_mentions}
               isReliable={reliable}
             />

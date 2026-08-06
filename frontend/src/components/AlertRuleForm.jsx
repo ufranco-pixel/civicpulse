@@ -170,13 +170,6 @@ export function AlertRuleForm({ campaignCode, rule = null, onSaved, onCancel }) 
         </label>
       </div>
 
-      {metric && metric.known && (
-        <p className="disclaimer">
-          <strong>{metric.label}</strong> · {metric.definition}
-          {metric.caveat ? ` — ${metric.caveat}` : ''}
-        </p>
-      )}
-
       <div className="grid grid-3">
         <label className="field">
           <span className="field-label">Operador</span>

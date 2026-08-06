@@ -10,7 +10,7 @@ import { useApi } from '../hooks/useApi.js';
 import { getCoordination, getContenders } from '../services/campaigns.service.js';
 import { brand } from '../config/brand.js';
 import { formatDateTime, formatNumber, truncate } from '../config/format.js';
-import PageHeader from '../components/PageHeader.jsx';
+import PageHeader, { ALL_TIME, resolveDays } from '../components/PageHeader.jsx';
 import ContenderTable from '../components/ContenderTable.jsx';
 import MetricCard from '../components/MetricCard.jsx';
 import ErrorState from '../components/ErrorState.jsx';
@@ -19,9 +19,9 @@ import { SkeletonTile } from '../components/SkeletonTile.jsx';
 
 export function ContendersPage() {
   const { code } = useCampaign();
-  const [days, setDays] = useState(14);
+  const [days, setDays] = useState(ALL_TIME);
 
-  const contenders = useApi(({ signal }) => getContenders(code, { days }, { signal }), [code, days], { enabled: Boolean(code) });
+  const contenders = useApi(({ signal }) => getContenders(code, { days: resolveDays(days) }, { signal }), [code, days], { enabled: Boolean(code) });
   const coordination = useApi(({ signal }) => getCoordination(code, { hours: 24, min_authors: 3 }, { signal }), [code], { enabled: Boolean(code) });
 
   if (!code) return <EmptyState title="Seleccione una campana" />;
@@ -40,7 +40,6 @@ export function ContendersPage() {
         periods={[7, 14, 30, 60]}
       />
 
-      <p className="disclaimer">{brand.disclaimer.long}</p>
 
       {own && (
         <div className="grid grid-4">
@@ -64,9 +63,6 @@ export function ContendersPage() {
           <h3 className="tile-title">Indicios de coordinacion · ultimas 24 h</h3>
           <span className="tile-sub">Textos casi identicos publicados por autores distintos</span>
         </div>
-        <p className="disclaimer">
-          Indicio, no prueba: las consignas legitimas de campana tambien se replican palabra por palabra.
-        </p>
         {coordination.error ? (
           <ErrorState compact error={coordination.error} onRetry={coordination.reload} />
         ) : coordination.loading ? (

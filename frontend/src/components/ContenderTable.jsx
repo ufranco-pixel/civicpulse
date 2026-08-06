@@ -14,9 +14,9 @@
 import { ArrowDownRight, ArrowUpRight, Minus, Star } from 'lucide-react';
 import { useCatalogs } from '../hooks/useCatalogs.js';
 import { formatCompact, formatNumber, isNil } from '../config/format.js';
-import { brand } from '../config/brand.js';
 import InfoTooltip from './InfoTooltip.jsx';
 import EmptyState from './EmptyState.jsx';
+import { periodLabel } from './PageHeader.jsx';
 
 function Momentum({ value }) {
   if (isNil(value)) return <span className="text-subtle">—</span>;
@@ -50,13 +50,9 @@ export function ContenderTable({ contenders = [], days = 14 }) {
   return (
     <section className="tile">
       <div className="tile-head">
-        <h3 className="tile-title">Tablero competitivo · ultimos {days} dias</h3>
+        <h3 className="tile-title">Tablero competitivo · {periodLabel(days)}</h3>
         <span className="tile-sub">Ordenado por cota conservadora de Wilson</span>
       </div>
-
-      {/* Aviso en la cabecera de la comparativa, no solo en el pie: es aqui
-          donde la lectura equivocada tiene consecuencias inmediatas. */}
-      <p className="disclaimer">{brand.disclaimer.full} La columna de encuesta, cuando existe, procede de una medicion probabilistica independiente y no es comparable punto a punto con el apoyo digital.</p>
 
       <div className="cp-table-wrap">
         <table className="table">

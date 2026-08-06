@@ -13,7 +13,7 @@ import { listInferences } from '../services/inferences.service.js';
 import { getContenders } from '../services/campaigns.service.js';
 import ContentTable from '../components/ContentTable.jsx';
 import AnnotationModal from '../components/AnnotationModal.jsx';
-import PageHeader from '../components/PageHeader.jsx';
+import PageHeader, { ALL_TIME, ALL_TIME_DAYS, periodLabel } from '../components/PageHeader.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 
 const PAGE_SIZE = 25;
@@ -39,14 +39,26 @@ export function ContentPage() {
   const filters = useMemo(() => fromParams(params), [params]);
   const filtersKey = JSON.stringify(filters);
 
+  // `days` NO viaja como tal a esta API: el listado se acota con date_from.
+  // ALL_TIME (0) significa no mandar nada, y entonces el backend arranca en el
+  // comentario mas antiguo de la campana.
+  const [days, setDays] = useState(ALL_TIME);
+
+  const dateFrom = useMemo(() => {
+    if (days === ALL_TIME) return undefined;
+    const desde = new Date();
+    desde.setDate(desde.getDate() - days);
+    return desde.toISOString();
+  }, [days]);
+
   const inferences = useApi(
-    ({ signal }) => listInferences(code, filters, { signal }),
-    [code, filtersKey],
+    ({ signal }) => listInferences(code, { ...filters, date_from: dateFrom }, { signal }),
+    [code, filtersKey, dateFrom],
     { enabled: Boolean(code) },
   );
 
   const contenders = useApi(
-    ({ signal }) => getContenders(code, { days: 30 }, { signal }),
+    ({ signal }) => getContenders(code, { days: ALL_TIME_DAYS }, { signal }),
     [code],
     { enabled: Boolean(code) },
   );
@@ -69,7 +81,9 @@ export function ContentPage() {
     <div className="stack animate-in">
       <PageHeader
         title="Contenidos"
-        description="Cada comentario analizado, con su clasificacion y la evidencia que la sostiene."
+        description={`Cada comentario analizado de ${periodLabel(days)}, con su clasificacion y la evidencia que la sostiene.`}
+        days={days}
+        onDaysChange={setDays}
         onReload={inferences.reload}
       />
 

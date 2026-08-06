@@ -187,7 +187,6 @@ export function SettingsPage() {
         )}
       </section>
 
-      <p className="disclaimer">{brand.disclaimer.long}</p>
     </div>
   );
 }

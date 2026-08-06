@@ -77,10 +77,6 @@ export function ReviewPage() {
         onReload={queue.reload}
       />
 
-      <p className="disclaimer">
-        Confirmar mantiene la etiqueta del modelo en los agregados. Corregir la reemplaza: los indicadores
-        reflejan el cambio de inmediato.
-      </p>
 
       {queue.error ? (
         <ErrorState error={queue.error} onRetry={queue.reload} />

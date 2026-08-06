@@ -12,7 +12,7 @@ import { useApi } from '../hooks/useApi.js';
 import { getEntities, getTopics } from '../services/campaigns.service.js';
 import { useCatalogs } from '../hooks/useCatalogs.js';
 import { formatNumber, isNil } from '../config/format.js';
-import PageHeader from '../components/PageHeader.jsx';
+import PageHeader, { ALL_TIME, resolveDays } from '../components/PageHeader.jsx';
 import TopicTreemap from '../components/TopicTreemap.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -22,10 +22,10 @@ import { SkeletonTile } from '../components/SkeletonTile.jsx';
 export function AgendaPage() {
   const { code } = useCampaign();
   const { getMetric, getLabel, catalog } = useCatalogs();
-  const [days, setDays] = useState(14);
+  const [days, setDays] = useState(ALL_TIME);
   const [entityType, setEntityType] = useState('');
 
-  const topics = useApi(({ signal }) => getTopics(code, { days, limit: 25 }, { signal }), [code, days], { enabled: Boolean(code) });
+  const topics = useApi(({ signal }) => getTopics(code, { days: resolveDays(days), limit: 25 }, { signal }), [code, days], { enabled: Boolean(code) });
   const entities = useApi(
     ({ signal }) => getEntities(code, { limit: 30, entity_type: entityType || undefined, months: 6 }, { signal }),
     [code, entityType],

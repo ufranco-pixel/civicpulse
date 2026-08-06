@@ -11,7 +11,7 @@ import { useCampaign } from '../hooks/useCampaign.js';
 import { useApi } from '../hooks/useApi.js';
 import { getEmotions, getOverview, getSources, getTimeseries } from '../services/campaigns.service.js';
 import { formatDateTime, formatNumber } from '../config/format.js';
-import PageHeader from '../components/PageHeader.jsx';
+import PageHeader, { ALL_TIME, resolveDays } from '../components/PageHeader.jsx';
 import TimeSeriesChart from '../components/TimeSeriesChart.jsx';
 import SentimentDonut from '../components/SentimentDonut.jsx';
 import EmotionRadar from '../components/EmotionRadar.jsx';
@@ -29,12 +29,12 @@ const HEALTH_CLASS = {
 
 export function SentimentPage() {
   const { code } = useCampaign();
-  const [days, setDays] = useState(30);
+  const [days, setDays] = useState(ALL_TIME);
   const [granularity, setGranularity] = useState('day');
 
-  const overview = useApi(({ signal }) => getOverview(code, { days }, { signal }), [code, days], { enabled: Boolean(code) });
-  const series = useApi(({ signal }) => getTimeseries(code, { days, granularity }, { signal }), [code, days, granularity], { enabled: Boolean(code) });
-  const emotions = useApi(({ signal }) => getEmotions(code, { days }, { signal }), [code, days], { enabled: Boolean(code) });
+  const overview = useApi(({ signal }) => getOverview(code, { days: resolveDays(days) }, { signal }), [code, days], { enabled: Boolean(code) });
+  const series = useApi(({ signal }) => getTimeseries(code, { days: resolveDays(days), granularity }, { signal }), [code, days, granularity], { enabled: Boolean(code) });
+  const emotions = useApi(({ signal }) => getEmotions(code, { days: resolveDays(days) }, { signal }), [code, days], { enabled: Boolean(code) });
   const sources = useApi(({ signal }) => getSources(code, {}, { signal }), [code], { enabled: Boolean(code) });
 
   if (!code) return <EmptyState title="Seleccione una campana" />;

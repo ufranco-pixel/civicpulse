@@ -38,20 +38,23 @@ const brand = {
   docsUrl: '',
 
   /**
-   * Aviso metodologico. No es decorativo: es la frase que impide que el
-   * tablero se lea como una encuesta. Aparece en el pie, en la cabecera de las
-   * comparativas y en el PDF que genera reports-api.
+   * Aviso metodologico, retirado de la interfaz a peticion del cliente.
+   *
+   * Las tres claves se conservan VACIAS y no se borran: `src/config/brand.js`
+   * las lee y hace `pick()` sobre `disclaimer.full`. Quitarlas del objeto
+   * romperia esa lectura con «cannot read properties of undefined».
+   *
+   * Volver a mostrarlo es rellenar estas cadenas; el pie de pagina y las
+   * cabeceras que lo pintaban ya no existen, asi que habria que reponer
+   * tambien el <p className="disclaimer"> donde se quiera.
+   *
+   * Nota aparte: el PDF que genera reports-api lleva su propia nota
+   * metodologica, en su plantilla del backend. Este cambio no lo toca.
    */
   disclaimer: {
-    short: 'Mide conversacion publica digital. No es una encuesta.',
-    full:
-      'Mide conversacion publica digital. No es una encuesta ni predice resultados electorales.',
-    long:
-      'Los indicadores de este tablero miden conversacion publica digital. Quien publica en redes '
-      + 'y medios abiertos no es una muestra representativa del electorado: los resultados no son '
-      + 'una encuesta, no tienen margen de error probabilistico y no predicen resultados '
-      + 'electorales. Todo indicador se acompana de su tamano de muestra y de su advertencia de '
-      + 'interpretacion tomada del registro de indicadores.',
+    short: '',
+    full: '',
+    long: '',
   },
 };
 

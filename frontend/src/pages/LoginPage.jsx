@@ -30,7 +30,6 @@ export function LoginPage() {
           </div>
         </div>
 
-        <p className="disclaimer">{brand.disclaimer.long}</p>
 
         {error && (
           <p className="text-danger" style={{ fontSize: 'var(--fs-xs)' }}>
