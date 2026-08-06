@@ -15,6 +15,7 @@ import {
 import { brand } from '../config/brand.js';
 import { useCampaign } from '../hooks/useCampaign.js';
 import { useAlertStream } from '../hooks/useAlertStream.js';
+import { useAvailableModules } from '../hooks/useAvailableModules.js';
 import { useResponsive } from '../hooks/useResponsive.js';
 import CampaignSelector from './CampaignSelector.jsx';
 import UserMenu from './UserMenu.jsx';
@@ -61,24 +62,38 @@ export function Layout() {
   const live = useAlertStream({ campaignCode: code });
   const liveValue = useMemo(() => live, [live]);
 
+  // Oculta del rail las secciones que hoy no tienen nada que ensenar.
+  // Reaparecen solas al cargar contendientes, temas o reglas de alerta.
+  const modulos = useAvailableModules(code);
+
   const railCollapsed = collapsed || isCompact;
 
   return (
     <LiveAlertsContext.Provider value={liveValue}>
       <div className={`cp-shell ${railCollapsed ? 'cp-shell-collapsed' : ''}`}>
         <aside className="cp-rail" aria-label="Navegacion principal">
-          <div className="cp-rail-brand">
-            <span className="cp-logo" aria-hidden="true">{brand.shortName}</span>
+          <div className={`cp-rail-perfil ${railCollapsed ? 'is-compact' : ''}`}>
+            {/* La foto se sirve desde public/ y NO se importa: asi se puede
+                reemplazar en el contenedor sin recompilar el bundle.
+                Si falta el fichero, onError deja el hueco limpio en lugar de
+                pintar el icono de imagen rota del navegador. */}
+            <img
+              className="cp-rail-foto"
+              src="/foto.jpg"
+              alt={campaign?.name ? `Fotografia de ${campaign.name}` : 'Fotografia'}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
             {!railCollapsed && (
-              <span className="cp-brand-text">
-                <strong>{brand.productName}</strong>
-                <small>{brand.tagline}</small>
+              <span className="cp-rail-perfil-texto">
+                <strong>{campaign?.name || brand.productName}</strong>
+                <small>{campaign?.name ? brand.productName : brand.tagline}</small>
               </span>
             )}
           </div>
 
           <nav className="cp-nav">
-            {NAV.filter((item) => brand.modules[item.module] !== false).map((item) => {
+            {NAV.filter((item) => brand.modules[item.module] !== false
+                              && modulos.isVisible(item.module)).map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
