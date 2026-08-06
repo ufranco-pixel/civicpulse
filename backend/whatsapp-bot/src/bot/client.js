@@ -23,6 +23,16 @@ const qrcodeTerminal = require('qrcode-terminal');
 
 const { logger } = require('../logger');
 
+/** Versión instalada de whatsapp-web.js, para poder verla en el log. */
+const WWEBJS_VERSION = (() => {
+  try {
+    // eslint-disable-next-line global-require, import/no-dynamic-require
+    return require('whatsapp-web.js/package.json').version;
+  } catch {
+    return 'desconocida';
+  }
+})();
+
 // El valor por defecto coincide con el WA_SESSION_PATH del Dockerfile y con
 // la ruta que monta docker-compose. Cuando divergían, la carpeta preparada
 // con dueño `node` no era la que se usaba y el arranque moría con EACCES.
@@ -165,6 +175,24 @@ function buildClient(onMessage) {
       // descarga el suyo (PUPPETEER_SKIP_CHROMIUM_DOWNLOAD en el Dockerfile).
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     },
+    // Agente de usuario de un Chrome de escritorio.
+    //
+    // Con el que anuncia Chromium headless, WhatsApp Web sirve una variante
+    // distinta de la aplicación y los selectores que inyecta la librería no
+    // encuentran lo que buscan: autentica y nunca emite 'ready'.
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+      + '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+
+    // SIN caché de versión de WhatsApp Web.
+    //
+    // Por omisión la librería fija una versión concreta descargada de un
+    // repositorio remoto. Si esa versión ya no es compatible con lo que sirve
+    // WhatsApp, el cliente se queda a medias sin ningún error. Con 'none' usa
+    // la que WhatsApp entregue en ese momento, que es lo que hace funcionar el
+    // servicio de ziba.
+    webVersionCache: { type: 'none' },
+
     takeoverOnConflict: true,
     qrMaxRetries: 0,
   });
@@ -273,7 +301,16 @@ async function initClient(options = {}) {
       client = null;
     }
     client = buildClient(onMessage);
-    logger.info('inicializando cliente de WhatsApp', { attempt: state.attempts, session_path: SESSION_PATH });
+    // La versión de la librería en el log no es adorno: una versión vieja
+    // autentica y se queda esperando 'ready' para siempre, porque los
+    // selectores que inyecta ya no coinciden con lo que sirve WhatsApp Web.
+    // Verlo aquí evita depurar durante una hora una imagen que no se
+    // reconstruyó.
+    logger.info('inicializando cliente de WhatsApp', {
+      attempt: state.attempts,
+      session_path: SESSION_PATH,
+      wwebjs: WWEBJS_VERSION,
+    });
     await client.initialize();
     return getState();
   } catch (err) {

@@ -1,11 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Análisis de Sentimientos · sistema de diseno
-   Azul civico como primario, ambar como acento. Todo color, espacio y radio
-   se declara aqui una vez; ningun componente escribe un hexadecimal.
+   Naranja de oeste (#F4981B) como primario. Todo color, espacio y radio se
+   declara aqui una vez; ningun componente escribe un hexadecimal.
+
+   Los neutros son calidos a proposito: un gris azulado junto a un primario
+   naranja produce un contraste de temperatura que se lee como suciedad. Sus
+   luminancias son IDENTICAS a las de los grises azulados anteriores, asi que
+   ninguna relacion de contraste cambio al cambiar la temperatura.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Marca: azul civico ─────────────────────────────────────────────── */
+  /* ── Marca: naranja de oeste ────────────────────────────────────────── */
   /* Escala de marca en el naranja de oeste, #F4981B, construida alrededor de
      hsl(35, 91%, 53%). Antes era azul; se sustituye la escala entera y no solo
      --c-brand porque los tonos 50–200 se usan como fondos de selección y de
@@ -41,32 +46,32 @@
   --c-accent:     var(--c-accent-600);
 
   /* ── Superficies y texto ────────────────────────────────────────────── */
-  --c-bg:            #f6f7fb;
+  --c-bg:            #faf8f5;
   --c-surface:       #ffffff;
-  --c-surface-2:     #f1f3f9;
-  --c-surface-3:     #e6e9f2;
-  --c-surface-inset: #fafbfe;
-  --c-overlay:       rgba(15, 23, 42, 0.48);
+  --c-surface-2:     #f5f2ed;
+  --c-surface-3:     #ebe6df;
+  --c-surface-inset: #fdfbf8;
+  --c-overlay:       rgba(28, 20, 10, 0.48);
 
-  --c-text:        #0f172a;
-  --c-text-muted:  #475569;
-  --c-text-subtle: #74809a;
+  --c-text:        #1f1a14;
+  --c-text-muted:  #5e5244;
+  --c-text-subtle: #8f7d67;
   --c-text-invert: #ffffff;
 
-  --c-border:        #dfe3ed;
-  --c-border-strong: #c3cad9;
+  --c-border:        #e7e3de;
+  --c-border-strong: #d1c8bf;
   --c-focus:         var(--c-brand-500);
 
   /* ── Semanticos ─────────────────────────────────────────────────────── */
   --c-success:    #15803d;  --c-success-bg: #dcfce7;
   --c-warning:    #b45309;  --c-warning-bg: #fef3c7;
   --c-danger:     #b91c1c;  --c-danger-bg:  #fee2e2;
-  --c-info:       #0369a1;  --c-info-bg:    #e0f2fe;
+  --c-info:       #b76706;  --c-info-bg:    #fff6eb;
 
   /* ── Sentimiento (que se siente) ────────────────────────────────────── */
   --c-positive:    #15803d;  --c-positive-bg: #dcfce7;
   --c-negative:    #be123c;  --c-negative-bg: #ffe4e6;
-  --c-neutral:     #64748b;  --c-neutral-bg:  #eef1f6;
+  --c-neutral:     #81715e;  --c-neutral-bg:  #f4f1ec;
   --c-mixed:       #7c3aed;  --c-mixed-bg:    #ede9fe;
 
   /* ── Postura (hacia quien): eje distinto del sentimiento ────────────── */
@@ -75,7 +80,12 @@
   --c-against:     #c2410c;  --c-against-bg:   #ffedd5;
   --c-undecided:   #a16207;  --c-undecided-bg: #fef9c3;
 
-  /* ── Emociones: las 12 del catalogo civic_cat.emotion_types ─────────── */
+  /* ── Emociones: las 12 del catalogo civic_cat.emotion_types ───────────
+     Estas NO se pasan al naranja, y es deliberado: son series de datos que
+     tienen que distinguirse entre si en el radar de emociones. `sadness` en
+     naranja seria indistinguible de `joy` y del propio color de marca, y el
+     grafico dejaria de significar nada. Lo mismo con `--c-favor` (postura a
+     favor) y `--c-mixed`. Codifican dato, no marca. */
   --c-joy:          #f59e0b;
   --c-trust:        #0ea5e9;
   --c-fear:         #7c3aed;
@@ -87,10 +97,10 @@
   --c-indignation:  #9f1239;
   --c-hope:         #22c55e;
   --c-distrust:     #78716c;
-  --c-apathy:       #94a3b8;
+  --c-apathy:       #a89686;
 
   /* ── Severidades de alerta ──────────────────────────────────────────── */
-  --c-sev-info:     #0369a1;  --c-sev-info-bg:     #e0f2fe;
+  --c-sev-info:     #b76706;  --c-sev-info-bg:     #fff6eb;
   --c-sev-low:      #4d7c0f;  --c-sev-low-bg:      #ecfccb;
   --c-sev-medium:   #b45309;  --c-sev-medium-bg:   #fef3c7;
   --c-sev-high:     #c2410c;  --c-sev-high-bg:     #ffedd5;
@@ -144,10 +154,10 @@
 
   --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-full: 999px;
 
-  --sh-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --sh-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --sh-md: 0 4px 12px rgba(15, 23, 42, 0.08);
-  --sh-lg: 0 12px 32px rgba(15, 23, 42, 0.14);
+  --sh-xs: 0 1px 2px rgba(40, 28, 12, 0.06);
+  --sh-sm: 0 1px 3px rgba(40, 28, 12, 0.08), 0 1px 2px rgba(40, 28, 12, 0.04);
+  --sh-md: 0 4px 12px rgba(40, 28, 12, 0.08);
+  --sh-lg: 0 12px 32px rgba(40, 28, 12, 0.14);
 
   --tr-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
   --tr-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -164,20 +174,20 @@
 
 /* ── Tema oscuro ──────────────────────────────────────────────────────── */
 [data-theme='dark'] {
-  --c-bg:            #0b1020;
-  --c-surface:       #131a2e;
-  --c-surface-2:     #1a2338;
-  --c-surface-3:     #232d47;
-  --c-surface-inset: #0f1526;
-  --c-overlay:       rgba(2, 6, 20, 0.7);
+  --c-bg:            #14100c;
+  --c-surface:       #1e1a16;
+  --c-surface-2:     #28231d;
+  --c-surface-3:     #332c25;
+  --c-surface-inset: #191410;
+  --c-overlay:       rgba(12, 8, 4, 0.72);
 
   --c-text:        #e8ecf6;
-  --c-text-muted:  #a3aec6;
-  --c-text-subtle: #7b87a3;
-  --c-text-invert: #0b1020;
+  --c-text-muted:  #b8ac9e;
+  --c-text-subtle: #96846f;
+  --c-text-invert: #14100c;
 
-  --c-border:        #26314c;
-  --c-border-strong: #3a4767;
+  --c-border:        #383128;
+  --c-border-strong: #50453a;
 
   /* En oscuro se usa el 400: sobre fondo negro el 500 pierde presencia y el
      600 se apaga del todo. El texto sigue siendo oscuro (9.7:1). */
@@ -188,18 +198,18 @@
   --c-success: #4ade80;  --c-success-bg: #08301c;
   --c-warning: #fbbf24;  --c-warning-bg: #3a2708;
   --c-danger:  #fb7185;  --c-danger-bg:  #3d1020;
-  --c-info:    #38bdf8;  --c-info-bg:    #082f45;
+  --c-info:    #f6ad46;  --c-info-bg:    #453008;
 
   --c-positive: #4ade80; --c-positive-bg: #08301c;
   --c-negative: #fb7185; --c-negative-bg: #3d1020;
-  --c-neutral:  #94a3b8; --c-neutral-bg:  #1d2739;
+  --c-neutral:  #b89e83; --c-neutral-bg:  #39301d;
   --c-mixed:    #a78bfa; --c-mixed-bg:    #2a1d4a;
 
   --c-favor:     #2dd4bf; --c-favor-bg:     #062f2b;
   --c-against:   #fb923c; --c-against-bg:   #3a1e08;
   --c-undecided: #facc15; --c-undecided-bg: #3a300a;
 
-  --c-sev-info:     #38bdf8; --c-sev-info-bg:     #082f45;
+  --c-sev-info:     #f6ad46; --c-sev-info-bg:     #453008;
   --c-sev-low:      #a3e635; --c-sev-low-bg:      #1f2b08;
   --c-sev-medium:   #fbbf24; --c-sev-medium-bg:   #3a2708;
   --c-sev-high:     #fb923c; --c-sev-high-bg:     #3a1e08;

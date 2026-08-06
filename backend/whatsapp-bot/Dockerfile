@@ -29,8 +29,16 @@ RUN apk add --no-cache \
 # El comentario va fuera de la instrucción, no dentro de la continuación de
 # línea: los comentarios intercalados en un ENV de varias líneas dependen del
 # motor de construcción y no merece la pena arriesgarse.
+# PUPPETEER_SKIP_DOWNLOAD, no solo la variable antigua.
+#
+# whatsapp-web.js 1.34 arrastra puppeteer 24, y en esa rama la variable que
+# evita bajar Chrome se llama PUPPETEER_SKIP_DOWNLOAD. Con solo la antigua
+# (PUPPETEER_SKIP_CHROMIUM_DOWNLOAD) el postinstall intenta descargar unos
+# 300 MB, y en un servidor sin salida a storage.googleapis.com `npm ci`
+# revienta. Se dejan las dos: la vieja no molesta.
 ENV NODE_ENV=production \
     PORT=8001 \
+    PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
     WA_SESSION_PATH=/app/wa-session
@@ -41,6 +49,16 @@ WORKDIR /app
 # cuando cambian las dependencias, no en cada cambio de código.
 COPY --chown=node:node package.json package-lock.json* ./
 RUN npm ci --omit=dev && npm cache clean --force
+
+# Que el binario de Chromium exista se comprueba AL CONSTRUIR, no al arrancar.
+#
+# PUPPETEER_EXECUTABLE_PATH apunta a /usr/bin/chromium-browser, que es lo que
+# instala el paquete `chromium` de Alpine hoy. Si una versión futura de la
+# imagen base lo renombra, sin esta comprobación el fallo aparecería en
+# producción como un cliente que no arranca y cuesta relacionar con la causa.
+RUN test -x "$PUPPETEER_EXECUTABLE_PATH" \
+ || { echo "FALTA $PUPPETEER_EXECUTABLE_PATH. Binarios disponibles:"; ls -l /usr/bin/chromium* || true; exit 1; } \
+ && echo "chromium ok: $("$PUPPETEER_EXECUTABLE_PATH" --version 2>/dev/null || echo 'sin --version')"
 
 COPY --chown=node:node src ./src
 
