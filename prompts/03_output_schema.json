@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://civicpulse.local/schemas/classification/v1.json",
+  "$id": "https://oeste-sentimientos.local/schemas/classification/v1.json",
   "title": "Salida del clasificador de comentarios políticos",
   "description": "Contrato de salida de civic-comment-classifier v1. Se valida con jsonschema en app/services/classifier.py ANTES de persistir. Una respuesta que no valide se reintenta una vez; si vuelve a fallar se registra con schema_valid=false y cuenta en la métrica schema_valid_rate.",
   "type": "object",

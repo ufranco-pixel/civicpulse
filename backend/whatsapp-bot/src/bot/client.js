@@ -23,8 +23,8 @@ const qrcodeTerminal = require('qrcode-terminal');
 
 const { logger } = require('../logger');
 
-const SESSION_PATH = process.env.WA_SESSION_PATH || '/var/lib/civicpulse/wa-session';
-const CLIENT_ID = process.env.WA_CLIENT_ID || 'civicpulse';
+const SESSION_PATH = process.env.WA_SESSION_PATH || '/var/lib/oeste-sentimientos/wa-session';
+const CLIENT_ID = process.env.WA_CLIENT_ID || 'oeste-sentimientos';
 const PRINT_QR_TERMINAL = String(process.env.WA_PRINT_QR_TERMINAL || 'true').toLowerCase() === 'true';
 
 const MAX_RETRIES = Number.parseInt(process.env.WA_MAX_INIT_RETRIES || '8', 10);

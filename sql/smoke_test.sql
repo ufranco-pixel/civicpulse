@@ -1,10 +1,10 @@
 -- =============================================================================
--- CivicPulse · smoke_test.sql
+-- Análisis de Sentimientos · smoke_test.sql
 -- Prueba de humo end-to-end. Crea una organización efímera, inyecta datos
 -- sintéticos, ejercita todos los indicadores y hace ROLLBACK al final.
 --
 -- No deja rastro en la base. Ejecutar tras cada despliegue:
---   psql -d civicpulse -v ON_ERROR_STOP=1 -f sql/smoke_test.sql
+--   psql -d oeste-sentimientos -v ON_ERROR_STOP=1 -f sql/smoke_test.sql
 --
 -- Si algún ASSERT falla, el script aborta señalando qué se rompió.
 -- =============================================================================

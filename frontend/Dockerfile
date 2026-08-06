@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # ─────────────────────────────────────────────────────────────────────────────
-# CivicPulse · frontend
+# Análisis de Sentimientos · frontend
 #
 # Vite congela las variables VITE_* en el bundle DURANTE la compilacion: no se
 # pueden cambiar al arrancar el contenedor. Por eso todas ellas son ARG aqui.
@@ -23,7 +23,7 @@ ARG VITE_WHATSAPP_API_URL=http://localhost:8005
 ARG VITE_API_TIMEOUT_MS=20000
 # Identidad
 ARG VITE_KEYCLOAK_URL=http://localhost:8080
-ARG VITE_KEYCLOAK_REALM=civicpulse
+ARG VITE_KEYCLOAK_REALM=oeste-sentimientos
 ARG VITE_KEYCLOAK_CLIENT_ID=civicpulse-frontend
 ARG VITE_TOKEN_MIN_VALIDITY=70
 ARG VITE_AUTH_DISABLED=false
@@ -32,9 +32,9 @@ ARG VITE_SSE_RETRY_BASE_MS=2000
 ARG VITE_SSE_RETRY_MAX_MS=60000
 ARG VITE_SSE_SEVERITY_MIN=
 # Marca
-ARG VITE_BRAND_NAME=CivicPulse
-ARG VITE_BRAND_SHORT_NAME=CP
-ARG VITE_BRAND_PRODUCT_NAME=CivicPulse
+ARG VITE_BRAND_NAME=Análisis de Sentimientos
+ARG VITE_BRAND_SHORT_NAME=oeste
+ARG VITE_BRAND_PRODUCT_NAME=Análisis de Sentimientos
 ARG VITE_BRAND_TAGLINE=
 ARG VITE_BRAND_PRIMARY_COLOR=
 ARG VITE_BRAND_ACCENT_COLOR=

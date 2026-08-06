@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 02_core.sql
+-- Análisis de Sentimientos · 02_core.sql
 -- Modelo de dominio: organizaciones, usuarios, campañas, contendientes,
 -- geografía, temas y fuentes.
 --

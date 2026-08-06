@@ -26,7 +26,7 @@ const DIGEST_DAYS = Number.parseInt(process.env.WA_DIGEST_DAYS || '7', 10);
 const BOT_ACTOR = { sub: 'whatsapp-bot', username: 'whatsapp-bot' };
 
 const HELP = [
-  '🤖 *CivicPulse · bot de WhatsApp*',
+  '🤖 *Análisis de Sentimientos · bot de WhatsApp*',
   '',
   'Comandos disponibles:',
   '• `!ping` — comprueba que el bot responde.',

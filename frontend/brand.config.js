@@ -6,9 +6,9 @@
  * para hacerlo. `src/config/brand.js` lo fusiona con las variables VITE_BRAND_*.
  */
 const brand = {
-  name: 'CivicPulse',
-  shortName: 'CP',
-  productName: 'CivicPulse',
+  name: 'Análisis de Sentimientos',
+  shortName: 'oeste',
+  productName: 'Análisis de Sentimientos',
   tagline: 'Escucha de conversacion publica digital',
   description:
     'Analisis de sentimiento, postura y agenda sobre comentarios publicos de campanas politicas.',
@@ -33,8 +33,8 @@ const brand = {
     settings: true,
   },
 
-  copyright: `© ${new Date().getFullYear()} CivicPulse`,
-  supportEmail: 'soporte@civicpulse.mx',
+  copyright: `© ${new Date().getFullYear()} Análisis de Sentimientos`,
+  supportEmail: 'soporte@oeste-sentimientos.mx',
   docsUrl: '',
 
   /**

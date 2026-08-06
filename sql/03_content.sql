@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 03_content.sql
+-- Análisis de Sentimientos · 03_content.sql
 -- Contenidos crudos (comentarios, publicaciones, notas) sobre campañas.
 --
 -- Tabla particionada por RANGE mensual sobre published_at. Es la tabla que

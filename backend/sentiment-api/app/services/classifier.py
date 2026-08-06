@@ -512,7 +512,7 @@ class ClassifierService:
         bundle: PromptBundle,
         contenders: dict[str, UUID],
     ) -> ClassificationResult:
-        """Traduce la salida del modelo al modelo de datos de CivicPulse."""
+        """Traduce la salida del modelo al modelo de datos de Análisis de Sentimientos."""
         sentiment = str(payload.get("sentiment") or payload.get("sentiment_code") or "neutral")
         if sentiment not in _VALID_SENTIMENT:
             sentiment = "neutral"

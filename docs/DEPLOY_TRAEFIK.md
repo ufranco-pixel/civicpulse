@@ -1,6 +1,6 @@
 # Despliegue en producción con Traefik
 
-Para un Traefik **ya montado** en otra red de Docker. CivicPulse se une a esa red y se
+Para un Traefik **ya montado** en otra red de Docker. Análisis de Sentimientos se une a esa red y se
 anuncia con etiquetas; no toca la configuración de su Traefik.
 
 ---
@@ -19,7 +19,7 @@ Tomados del stack de `ziba-calendar`. `.env.prod.example` ya viene con ellos.
 | Dominio | `*.oeste.mx` | `APP_DOMAIN` |
 
 Sólo queda por decidir el subdominio. `.env.prod.example` propone
-`civicpulse.oeste.mx`.
+`sentimientos.oeste.mx`.
 
 ### Lo único que aún me falta de usted
 
@@ -60,10 +60,10 @@ Vite inlinea los build args en el JavaScript que descarga el navegador. Cualquie
 `zibareservaciones.oeste.mx` y mire el bundle puede extraerla y gastar su cuota. Conviene
 rotarla en AI Studio y mover las llamadas a Gemini al backend.
 
-En CivicPulse la clave sólo la conoce `sentiment-api`; el navegador nunca habla con Gemini.
+En Análisis de Sentimientos la clave sólo la conoce `sentiment-api`; el navegador nunca habla con Gemini.
 Aun así, **use una clave distinta** para poder revocar una sin tumbar la otra.
 
-**2. `admin:admin` y `CORS_ORIGINS: '*'`.** Para CivicPulse no reutilice ese usuario: el
+**2. `admin:admin` y `CORS_ORIGINS: '*'`.** Para Análisis de Sentimientos no reutilice ese usuario: el
 aislamiento multi-tenant depende de RLS, y PostgreSQL no se la aplica a los superusuarios.
 Con `admin` conectado, cada organización vería los datos de todas. El `.env` incluye el SQL
 para crear un rol propio sin privilegios.
@@ -72,7 +72,7 @@ para crear un rol propio sin privilegios.
 
 ## Requisitos previos, en orden
 
-1. **DNS.** `civicpulse.oeste.mx` apuntando al servidor de Traefik. Let's Encrypt
+1. **DNS.** `sentimientos.oeste.mx` apuntando al servidor de Traefik. Let's Encrypt
    valida por HTTP: si el DNS no resuelve todavía, la emisión falla y Traefik entra en el
    límite de peticiones de ACME.
 
@@ -98,7 +98,7 @@ para crear un rol propio sin privilegios.
 5. **Realm en su Keycloak.** En `auth.oeste.mx` → Create realm → Import →
    `docs/keycloak/civicpulse-realm.json`. Ajuste en el cliente
    `civicpulse-frontend` los redirect URIs y web origins a
-   `https://civicpulse.oeste.mx`, y borre los tres usuarios demo.
+   `https://sentimientos.oeste.mx`, y borre los tres usuarios demo.
 
 6. **Rol de aplicación sin privilegios.** No conecte con un superusuario: PostgreSQL no le
    aplica RLS y el aislamiento entre organizaciones queda anulado.
@@ -115,7 +115,7 @@ para crear un rol propio sin privilegios.
 ## Despliegue
 
 ```bash
-cd civicpulse
+cd oeste-sentimientos
 cp .env.prod.example .env
 # Ya viene con web-network, websecure, myresolver, auth.oeste.mx y la base.
 # Edite sólo: APP_DOMAIN, la contraseña de las dos DATABASE_URL,
@@ -133,14 +133,14 @@ esperan a que termine bien.
 ### Verificación
 
 ```bash
-curl -sI https://civicpulse.oeste.mx/                 # 200, index del frontend
-curl -s  https://civicpulse.oeste.mx/api/health       # {"status":"ok"}
-curl -s  https://civicpulse.oeste.mx/alerts/health    # {"status":"ok"}
-curl -s  https://civicpulse.oeste.mx/reports/health   # {"status":"ok"}
+curl -sI https://sentimientos.oeste.mx/                 # 200, index del frontend
+curl -s  https://sentimientos.oeste.mx/api/health       # {"status":"ok"}
+curl -s  https://sentimientos.oeste.mx/alerts/health    # {"status":"ok"}
+curl -s  https://sentimientos.oeste.mx/reports/health   # {"status":"ok"}
 curl -s  https://auth.oeste.mx/realms/civicpulse/.well-known/openid-configuration | head -c 200
 
 # El stream SSE debe quedarse abierto y latir cada 25 s, no cerrarse.
-curl -N -H "Authorization: Bearer <token>" https://civicpulse.oeste.mx/alerts/alerts/stream
+curl -N -H "Authorization: Bearer <token>" https://sentimientos.oeste.mx/alerts/alerts/stream
 ```
 
 Ese último es el que más vale la pena mirar: si se cierra solo a los pocos segundos, revise
@@ -170,10 +170,10 @@ El paso 4 se olvida siempre: si no lo hace, el login redirige a `invalid_redirec
 
 | Ruta | Servicio | Middleware | Prioridad |
 |---|---|---|---|
-| `https://civicpulse.oeste.mx/api/*` | sentiment-api:8000 | stripprefix `/api` | 100 |
-| `https://civicpulse.oeste.mx/alerts/*` | alerts-api:8003 | stripprefix `/alerts` | 100 |
-| `https://civicpulse.oeste.mx/reports/*` | reports-api:8002 | stripprefix `/reports` | 100 |
-| `https://civicpulse.oeste.mx/*` | frontend:8080 | cabeceras de seguridad | 1 |
+| `https://sentimientos.oeste.mx/api/*` | sentiment-api:8000 | stripprefix `/api` | 100 |
+| `https://sentimientos.oeste.mx/alerts/*` | alerts-api:8003 | stripprefix `/alerts` | 100 |
+| `https://sentimientos.oeste.mx/reports/*` | reports-api:8002 | stripprefix `/reports` | 100 |
+| `https://sentimientos.oeste.mx/*` | frontend:8080 | cabeceras de seguridad | 1 |
 | `https://auth.oeste.mx/*` | su Keycloak existente | — | fuera de este compose |
 | — | whatsapp-bot:8001 | sin ruta pública | — |
 
@@ -216,8 +216,8 @@ tipo de despliegue.
 
 ```bash
 docker compose -f docker-compose.prod.yml logs -f
-docker exec civicpulse-sentiment-api python -c "from app.core.config import settings; print(settings.token_issuer)"
-docker run --rm --network web-network curlimages/curl -s http://civicpulse-sentiment-api:8000/health
+docker exec oeste-sentimientos-sentiment-api python -c "from app.core.config import settings; print(settings.token_issuer)"
+docker run --rm --network web-network curlimages/curl -s http://oeste-sentimientos-sentiment-api:8000/health
 ```
 
 ---
@@ -228,7 +228,7 @@ Sin `pg_cron` en la base gestionada hay que programarlas fuera. Añada al cronta
 servidor:
 
 ```cron
-*/15 * * * *  docker exec civicpulse-db-preflight true 2>/dev/null || docker run --rm --network civicpulse_civicnet -e PGCONNECT_TIMEOUT=10 postgres:16-alpine psql "$DATABASE_URL" -c "SELECT civic_kpi.refresh_all(true)"
+*/15 * * * *  docker exec oeste-sentimientos-db-preflight true 2>/dev/null || docker run --rm --network civicpulse_civicnet -e PGCONNECT_TIMEOUT=10 postgres:16-alpine psql "$DATABASE_URL" -c "SELECT civic_kpi.refresh_all(true)"
 ```
 
 Más limpio: un contenedor `ofelia` o un `systemd timer` que ejecute

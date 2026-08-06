@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 00_bootstrap.sql
+-- Análisis de Sentimientos · 00_bootstrap.sql
 -- Extensiones, esquemas, roles de base de datos y utilidades transversales.
 --
 -- Requisito mínimo: PostgreSQL 14+ SIN NINGUNA EXTENSIÓN.
@@ -19,7 +19,7 @@
 DO $$
 BEGIN
     IF current_setting('server_version_num')::int < 140000 THEN
-        RAISE EXCEPTION 'CivicPulse requiere PostgreSQL 14 o superior. Versión actual: %',
+        RAISE EXCEPTION 'Análisis de Sentimientos requiere PostgreSQL 14 o superior. Versión actual: %',
             current_setting('server_version');
     END IF;
 END
@@ -245,7 +245,7 @@ COMMENT ON FUNCTION civic_ops.content_fingerprint IS
 
 -- 5.5 Seudonimización de autores.
 --     El pepper vive en la configuración del servidor, nunca en el código:
---       ALTER DATABASE civicpulse SET civicpulse.author_pepper = '<secreto>';
+--       ALTER DATABASE oeste-sentimientos SET civicpulse.author_pepper = '<secreto>';
 CREATE OR REPLACE FUNCTION civic_ops.pseudonymize_author(p_external_id TEXT)
 RETURNS BYTEA
 LANGUAGE plpgsql
@@ -609,7 +609,7 @@ BEGIN
       INTO v_missing
       FROM civic_ops.feature_flags WHERE NOT is_available;
 
-    RAISE NOTICE '── CivicPulse bootstrap completado ──';
+    RAISE NOTICE '── Análisis de Sentimientos bootstrap completado ──';
     RAISE NOTICE 'Base de datos     : %', current_database();
     RAISE NOTICE 'PostgreSQL        : %', current_setting('server_version');
     RAISE NOTICE 'Esquemas          : civic, civic_cat, civic_kpi, civic_api, civic_ops';

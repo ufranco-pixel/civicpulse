@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 01_catalogs.sql
+-- Análisis de Sentimientos · 01_catalogs.sql
 -- Catálogos de referencia (esquema civic_cat) + carga inicial.
 --
 -- Criterio de diseño: catálogos como TABLAS, no como ENUM nativos.

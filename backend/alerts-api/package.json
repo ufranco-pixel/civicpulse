@@ -1,8 +1,8 @@
 {
-  "name": "@civicpulse/alerts-api",
+  "name": "@oeste-sentimientos/alerts-api",
   "version": "1.0.0",
   "private": true,
-  "description": "CivicPulse · API de alertas: SSE autenticado, CRUD de reglas y planificador que invoca civic.evaluate_alert_rules.",
+  "description": "Análisis de Sentimientos · API de alertas: SSE autenticado, CRUD de reglas y planificador que invoca civic.evaluate_alert_rules.",
   "type": "commonjs",
   "main": "src/index.js",
   "engines": {

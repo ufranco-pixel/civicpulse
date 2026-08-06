@@ -115,7 +115,7 @@ function formatAlert(alert) {
   const lines = [];
 
   lines.push(`${emoji} *${(alert.severity_label || alert.severity_code || 'Alerta').toUpperCase()}* · ${alert.alert_type_label || alert.alert_type_code || ''}`.trim());
-  lines.push(`*${alert.title || 'Alerta CivicPulse'}*`);
+  lines.push(`*${alert.title || 'Alerta Análisis de Sentimientos'}*`);
   lines.push('');
   if (alert.message) lines.push(alert.message);
 
@@ -162,7 +162,7 @@ function formatAlert(alert) {
  */
 function formatDigest(overview, scoreboard) {
   if (!overview) {
-    return '📊 *CivicPulse*\n\nNo hay datos para el periodo solicitado. '
+    return '📊 *Análisis de Sentimientos*\n\nNo hay datos para el periodo solicitado. '
       + 'El resumen se emite vacío a propósito: no se sustituyen datos ausentes por estimaciones.';
   }
 

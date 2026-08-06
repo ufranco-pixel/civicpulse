@@ -1,5 +1,5 @@
 # =============================================================================
-# CivicPulse · sentiment-api (8000)
+# Análisis de Sentimientos · sentiment-api (8000)
 # =============================================================================
 
 # ── Etapa 1: dependencias ────────────────────────────────────────────────────
@@ -39,15 +39,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tini \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home --uid 10001 --shell /usr/sbin/nologin civicpulse
+    && useradd --create-home --uid 10001 --shell /usr/sbin/nologin oeste-sentimientos
 
 COPY --from=builder /opt/venv /opt/venv
 
 WORKDIR /app
-COPY --chown=civicpulse:civicpulse app ./app
+COPY --chown=oeste-sentimientos:oeste-sentimientos app ./app
 
 # El servicio no escribe en disco ni necesita raíz para nada.
-USER civicpulse
+USER oeste-sentimientos
 
 EXPOSE 8000
 

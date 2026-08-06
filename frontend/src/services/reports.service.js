@@ -89,7 +89,7 @@ export async function downloadReport(jobId, filename) {
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = objectUrl;
-  anchor.download = filename || `civicpulse-${String(jobId).slice(0, 8)}.pdf`;
+  anchor.download = filename || `oeste-sentimientos-${String(jobId).slice(0, 8)}.pdf`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();

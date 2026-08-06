@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 08_materialized_views.sql
+-- Análisis de Sentimientos · 08_materialized_views.sql
 -- Vistas materializadas de agregación diaria.
 --
 -- Criterio: agregar por DÍA y por las dimensiones que el tablero cruza. Con eso
@@ -408,9 +408,9 @@ COMMENT ON FUNCTION civic_kpi.refresh_all IS
 DO $$
 BEGIN
     IF civic_ops.has_ext('pg_cron') THEN
-        PERFORM cron.schedule('civicpulse-refresh-kpis', '*/15 * * * *',
+        PERFORM cron.schedule('oeste-sentimientos-refresh-kpis', '*/15 * * * *',
                               'SELECT civic_kpi.refresh_all(true)');
-        PERFORM cron.schedule('civicpulse-ensure-partitions', '30 3 * * *',
+        PERFORM cron.schedule('oeste-sentimientos-ensure-partitions', '30 3 * * *',
                               'SELECT civic_ops.ensure_partitions(true)');
         RAISE NOTICE 'pg_cron: refresco cada 15 min y mantenimiento de particiones a las 03:30.';
     ELSE

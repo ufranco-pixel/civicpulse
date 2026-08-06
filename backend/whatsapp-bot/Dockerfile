@@ -1,5 +1,5 @@
 # =============================================================================
-# CivicPulse · whatsapp-bot (8001)
+# Análisis de Sentimientos · whatsapp-bot (8001)
 # =============================================================================
 FROM node:20-alpine
 
@@ -23,7 +23,7 @@ ENV NODE_ENV=production \
     PORT=8001 \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    WA_SESSION_PATH=/var/lib/civicpulse/wa-session
+    WA_SESSION_PATH=/var/lib/oeste-sentimientos/wa-session
 
 WORKDIR /app
 
@@ -41,7 +41,7 @@ RUN mkdir -p "$WA_SESSION_PATH" && chown -R node:node "$WA_SESSION_PATH"
 
 # Volumen para la sesión de WhatsApp. Sin persistencia hay que escanear el QR
 # en cada despliegue, lo que en la práctica significa que el canal se cae.
-VOLUME ["/var/lib/civicpulse/wa-session"]
+VOLUME ["/var/lib/oeste-sentimientos/wa-session"]
 
 # La versión anterior corría como root: un Chromium con --no-sandbox ejecutando
 # contenido remoto y con uid 0 es la peor combinación posible del sistema.

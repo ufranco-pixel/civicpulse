@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * CivicPulse · reports-api (8002)
+ * Análisis de Sentimientos · reports-api (8002)
  *
  * Genera informes de campaña en PDF. Los datos SIEMPRE se leen de la base con
  * el contexto de RLS de quien pide el informe; el cliente sólo elige campaña,

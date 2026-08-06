@@ -1,5 +1,5 @@
 # =============================================================================
-# CivicPulse · sentiment-api
+# Análisis de Sentimientos · sentiment-api
 #
 # Versiones fijas. Un rango abierto convierte cada reconstrucción de la imagen
 # en un despliegue con dependencias distintas a las que se probaron.

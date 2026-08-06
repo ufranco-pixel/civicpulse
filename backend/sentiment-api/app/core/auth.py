@@ -161,7 +161,7 @@ def _extract_roles(claims: dict[str, Any]) -> set[str]:
     roles.update(claims.get("realm_access", {}).get("roles", []) or [])
 
     resource_access = claims.get("resource_access", {}) or {}
-    for client in {settings.KC_AUDIENCE, "civicpulse-api"}:
+    for client in {settings.KC_AUDIENCE, "oeste-sentimientos-api"}:
         roles.update(resource_access.get(client, {}).get("roles", []) or [])
 
     # Keycloak emite además roles técnicos (offline_access, uma_authorization).
@@ -297,7 +297,7 @@ async def get_current_user(
     if not roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="El usuario no tiene ningún rol de CivicPulse asignado.",
+            detail="El usuario no tiene ningún rol de Análisis de Sentimientos asignado.",
         )
 
     return AuthenticatedUser(

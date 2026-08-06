@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 04_inference.sql
+-- Análisis de Sentimientos · 04_inference.sql
 -- Resultados del análisis: inferencias y sus tablas de detalle.
 --
 -- Decisión estructural: los ejes multivaluados (emociones, temas, posturas,

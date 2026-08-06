@@ -1,4 +1,4 @@
-# CivicPulse
+# Análisis de Sentimientos
 
 Plataforma de análisis de sentimiento sobre **comentarios acerca de campañas políticas**.
 
@@ -35,7 +35,7 @@ Consecuencias concretas en el producto:
 
 ## Diferencias con el sistema base
 
-| | Sistema base | CivicPulse |
+| | Sistema base | Análisis de Sentimientos |
 |---|---|---|
 | Actor medido | Una marca | N contendientes en competencia |
 | Ejes de clasificación | Sentimiento | Sentimiento **y postura**, separados |
@@ -58,7 +58,7 @@ Consecuencias concretas en el producto:
 conecta a la instancia que usted indique. Detalle completo en [`docs/EXTERNAL_DB.md`](docs/EXTERNAL_DB.md).
 
 ```bash
-cd civicpulse
+cd oeste-sentimientos
 cp .env.example .env
 # Edite: DATABASE_URL, DATABASE_URL_ASYNC, GEMINI_API_KEY,
 #        CIVICPULSE_AUTHOR_PEPPER (openssl rand -hex 32)
@@ -145,7 +145,7 @@ DATABASE_URL='postgresql://…' sh scripts/db-preflight.sh
 ## Estructura
 
 ```
-civicpulse/
+oeste-sentimientos/
 ├── sql/                        Capa de datos — 13 archivos, orden de dependencias
 │   ├── install.sql             Instalador completo
 │   ├── 00_bootstrap.sql        Esquemas, roles, dominios, utilidades, particiones
@@ -424,10 +424,10 @@ usarse para perfilar, segmentar ni tomar represalias contra autores individuales
 Con `pg_cron` se programa solo. Sin él:
 
 ```cron
-*/15 * * * *  psql -d civicpulse -c "SELECT civic_kpi.refresh_all(true)"
-30 3   * * *  psql -d civicpulse -c "SELECT civic_ops.ensure_partitions(true)"
-0  4   * * *  psql -d civicpulse -c "SELECT civic_ops.purge_raw_payloads(30)"
-0  5   * * 0  psql -d civicpulse -c "SELECT * FROM civic_ops.purge_expired_contents(50000,false)"
+*/15 * * * *  psql -d oeste-sentimientos -c "SELECT civic_kpi.refresh_all(true)"
+30 3   * * *  psql -d oeste-sentimientos -c "SELECT civic_ops.ensure_partitions(true)"
+0  4   * * *  psql -d oeste-sentimientos -c "SELECT civic_ops.purge_raw_payloads(30)"
+0  5   * * 0  psql -d oeste-sentimientos -c "SELECT * FROM civic_ops.purge_expired_contents(50000,false)"
 ```
 
 Comprobaciones periódicas:

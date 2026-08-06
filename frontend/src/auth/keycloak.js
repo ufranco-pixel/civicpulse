@@ -19,7 +19,7 @@ export const MIN_VALIDITY = Number.parseInt(env.VITE_TOKEN_MIN_VALIDITY || '70',
 
 export const keycloakConfig = {
   url: env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
-  realm: env.VITE_KEYCLOAK_REALM || 'civicpulse',
+  realm: env.VITE_KEYCLOAK_REALM || 'oeste-sentimientos',
   clientId: env.VITE_KEYCLOAK_CLIENT_ID || 'civicpulse-frontend',
 };
 

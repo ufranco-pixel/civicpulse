@@ -1,6 +1,6 @@
-# CivicPulse · sentiment-api
+# Análisis de Sentimientos · sentiment-api
 
-API analítica de lectura sobre la base CivicPulse. Consume el contrato
+API analítica de lectura sobre la base Análisis de Sentimientos. Consume el contrato
 `civic_api.*` y las funciones de `civic_kpi.*`; el modelo interno `civic.*`
 sólo se toca para las escrituras operativas (anotaciones, revisión, reglas de
 alerta, trabajos y evaluación).
@@ -14,7 +14,7 @@ alerta, trabajos y evaluación).
 ## Requisitos
 
 - Python 3.12
-- PostgreSQL con el esquema CivicPulse instalado (`sql/install.sql`)
+- PostgreSQL con el esquema Análisis de Sentimientos instalado (`sql/install.sql`)
 - Keycloak con el realm configurado (o `AUTH_DISABLED=true` en local)
 
 ## Puesta en marcha
@@ -34,11 +34,11 @@ Documentación interactiva en `http://localhost:8000/v1/docs`.
 ### Contenedor
 
 ```bash
-docker build -t civicpulse/sentiment-api:1.0.0 .
-docker run --rm -p 8000:8000 --env-file .env civicpulse/sentiment-api:1.0.0
+docker build -t oeste-sentimientos/sentiment-api:1.0.0 .
+docker run --rm -p 8000:8000 --env-file .env oeste-sentimientos/sentiment-api:1.0.0
 ```
 
-La imagen es multi-etapa, corre como usuario sin privilegios (`civicpulse`,
+La imagen es multi-etapa, corre como usuario sin privilegios (`oeste-sentimientos`,
 uid 10001) y su `HEALTHCHECK` usa el propio intérprete: `python:3.12-slim` no
 trae `curl` ni `wget`.
 

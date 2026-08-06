@@ -75,7 +75,7 @@ _connect_args: dict[str, Any] = {
         "statement_timeout": str(settings.STATEMENT_TIMEOUT_MS),
         # Aparece en pg_stat_activity: hace evidente qué servicio consulta.
         # En una base externa compartida es la única forma de atribuir carga.
-        "application_name": "civicpulse-sentiment-api",
+        "application_name": "oeste-sentimientos-sentiment-api",
         # El esquema interno NO va en la ruta de búsqueda: obliga a
         # calificar civic.* explícitamente y hace visible cualquier
         # consulta que se salte el contrato civic_api.

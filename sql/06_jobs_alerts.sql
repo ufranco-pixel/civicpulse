@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 06_jobs_alerts.sql
+-- Análisis de Sentimientos · 06_jobs_alerts.sql
 -- Trabajos de análisis, reglas de alerta, alertas y entregas.
 --
 -- Corrige la carencia principal del sistema base: allí las reglas se guardaban

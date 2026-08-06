@@ -1,6 +1,6 @@
-"""CivicPulse · sentiment-api.
+"""Análisis de Sentimientos · sentiment-api.
 
-Microservicio de lectura analítica sobre la base CivicPulse. Consume el
+Microservicio de lectura analítica sobre la base Análisis de Sentimientos. Consume el
 contrato `civic_api.*` y las funciones de `civic_kpi.*`; nunca el modelo
 interno `civic.*` salvo para las escrituras operativas (anotaciones, revisión,
 reglas de alerta, trabajos y evaluación).

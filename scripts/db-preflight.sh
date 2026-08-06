@@ -1,6 +1,6 @@
 #!/bin/sh
 # =============================================================================
-# CivicPulse · scripts/db-preflight.sh
+# Análisis de Sentimientos · scripts/db-preflight.sh
 #
 # Sustituye a db-init.sh en despliegues sobre una base de datos EXTERNA.
 #
@@ -37,7 +37,7 @@ bad()  { printf '  ❌ %s\n' "$*"; FAIL=$((FAIL + 1)); }
 
 say ''
 say '════════════════════════════════════════════════════════════'
-say '  CivicPulse · verificación de la base de datos externa'
+say '  Análisis de Sentimientos · verificación de la base de datos externa'
 say '════════════════════════════════════════════════════════════'
 
 # ── 1. Conectividad ─────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ VERSION_NUM=$(psql -tAc 'SHOW server_version_num' 2>/dev/null | tr -d ' ')
 ok "Conectado. PostgreSQL ${SERVER_VERSION}"
 
 if [ "${VERSION_NUM:-0}" -lt 140000 ]; then
-    bad "CivicPulse requiere PostgreSQL 14 o superior."
+    bad "Análisis de Sentimientos requiere PostgreSQL 14 o superior."
 fi
 
 CURRENT_USER=$(psql -tAc 'SELECT current_user' | tr -d ' ')

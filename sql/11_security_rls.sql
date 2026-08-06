@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 11_security_rls.sql
+-- Análisis de Sentimientos · 11_security_rls.sql
 -- Aislamiento multi-tenant por RLS, retención de datos y purga.
 --
 -- Modelo: la aplicación fija dos variables de sesión por transacción, tomadas
@@ -344,9 +344,9 @@ COMMENT ON VIEW civic_ops.v_compliance_status IS
 DO $$
 BEGIN
     IF civic_ops.has_ext('pg_cron') THEN
-        PERFORM cron.schedule('civicpulse-purge-raw',  '0 4 * * *',
+        PERFORM cron.schedule('oeste-sentimientos-purge-raw',  '0 4 * * *',
                               'SELECT civic_ops.purge_raw_payloads(30)');
-        PERFORM cron.schedule('civicpulse-purge-retention', '0 5 * * 0',
+        PERFORM cron.schedule('oeste-sentimientos-purge-retention', '0 5 * * 0',
                               'SELECT * FROM civic_ops.purge_expired_contents(50000, false)');
         RAISE NOTICE 'pg_cron: purga de payloads diaria 04:00, purga por retención semanal domingo 05:00.';
     ELSE

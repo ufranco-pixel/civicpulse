@@ -49,7 +49,7 @@ log = get_logger(__name__)
 REQUEST_ID_HEADER = "X-Request-ID"
 
 DESCRIPTION = """
-API analítica de CivicPulse.
+API analítica de Análisis de Sentimientos.
 
 **Aviso metodológico**: los indicadores miden *conversación pública digital*,
 no intención de voto. Quien publica no es una muestra representativa del
@@ -89,7 +89,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="CivicPulse Sentiment API",
+    title="Análisis de Sentimientos Sentiment API",
     description=DESCRIPTION,
     version=__version__,
     lifespan=lifespan,

@@ -1,8 +1,8 @@
 {
-  "name": "@civicpulse/reports-api",
+  "name": "@oeste-sentimientos/reports-api",
   "version": "1.0.0",
   "private": true,
-  "description": "CivicPulse · API de informes: genera PDF de campaña con datos leídos de la base, nunca recibidos del cliente.",
+  "description": "Análisis de Sentimientos · API de informes: genera PDF de campaña con datos leídos de la base, nunca recibidos del cliente.",
   "type": "commonjs",
   "main": "src/index.js",
   "engines": {

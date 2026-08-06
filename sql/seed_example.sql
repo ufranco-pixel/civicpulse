@@ -1,12 +1,12 @@
 -- =============================================================================
--- CivicPulse · seed_example.sql
+-- Análisis de Sentimientos · seed_example.sql
 -- PLANTILLA DE ALTA. No inserta nada tal como está.
 --
 -- Todo el archivo está comentado a propósito: usted pidió la instancia sin
 -- datos semilla. Descomente los bloques, sustituya los valores entre << >> y
 -- ejecute por partes, en este orden.
 --
---   psql -d civicpulse -v ON_ERROR_STOP=1 -f sql/seed_example.sql
+--   psql -d oeste-sentimientos -v ON_ERROR_STOP=1 -f sql/seed_example.sql
 --
 -- Cada bloque explica qué campos son críticos y por qué. Los que afectan a la
 -- calidad de la medición están marcados con «CRÍTICO».

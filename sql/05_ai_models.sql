@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 05_ai_models.sql
+-- Análisis de Sentimientos · 05_ai_models.sql
 -- Proveedores, modelos, plantillas de prompt y versionado.
 --
 -- El motor es "LLM con respaldo de modelos especializados": un prompt
@@ -53,13 +53,13 @@ INSERT INTO civic.model_providers (code, name, kind, base_url, credentials_ref, 
      -- Vertex AI sí. Ver la nota de no_training_clause más abajo.
      'tier_note', 'AI Studio gratuito: los datos pueden usarse para mejorar el servicio. Use Vertex AI o el nivel de pago para opinión política.'
    )),
-  ('vertex_ai',   'Google Vertex AI',     'llm_api',     NULL,                        'vault://civicpulse/vertex',     NULL, TRUE,  1200,
+  ('vertex_ai',   'Google Vertex AI',     'llm_api',     NULL,                        'vault://oeste-sentimientos/vertex',     NULL, TRUE,  1200,
    jsonb_build_object('api_version','v1','note','Mismos modelos Gemini con cláusula de no entrenamiento y región de datos configurable.')),
-  ('anthropic',   'Anthropic',            'llm_api',     'https://api.anthropic.com', 'vault://civicpulse/anthropic',  NULL, TRUE,  1000, '{}'::jsonb),
-  ('openai',      'OpenAI',               'llm_api',     'https://api.openai.com',    'vault://civicpulse/openai',     NULL, TRUE,  1000, '{}'::jsonb),
-  ('azure_openai','Azure OpenAI',         'llm_api',     NULL,                        'vault://civicpulse/azure',      NULL, TRUE,  1200, '{}'::jsonb),
+  ('anthropic',   'Anthropic',            'llm_api',     'https://api.anthropic.com', 'vault://oeste-sentimientos/anthropic',  NULL, TRUE,  1000, '{}'::jsonb),
+  ('openai',      'OpenAI',               'llm_api',     'https://api.openai.com',    'vault://oeste-sentimientos/openai',     NULL, TRUE,  1000, '{}'::jsonb),
+  ('azure_openai','Azure OpenAI',         'llm_api',     NULL,                        'vault://oeste-sentimientos/azure',      NULL, TRUE,  1200, '{}'::jsonb),
   ('vllm_local',  'vLLM autoalojado',     'self_hosted', 'http://vllm.internal:8000', NULL,                            NULL, TRUE,  NULL, '{}'::jsonb),
-  ('hf_inference','Hugging Face',         'managed_nlp', 'https://api-inference.huggingface.co', 'vault://civicpulse/hf', NULL, FALSE, 300, '{}'::jsonb),
+  ('hf_inference','Hugging Face',         'managed_nlp', 'https://api-inference.huggingface.co', 'vault://oeste-sentimientos/hf', NULL, FALSE, 300, '{}'::jsonb),
   ('hf_local',    'Transformers local',   'self_hosted', 'http://ml.internal:8500',   NULL,                            NULL, TRUE,  NULL, '{}'::jsonb),
   ('internal',    'Motor de reglas',      'rule_engine', NULL,                        NULL,                            NULL, TRUE,  NULL, '{}'::jsonb),
   ('human',       'Anotación humana',     'human',       NULL,                        NULL,                            NULL, TRUE,  NULL, '{}'::jsonb)

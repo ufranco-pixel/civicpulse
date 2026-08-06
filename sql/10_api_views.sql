@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 10_api_views.sql
+-- Análisis de Sentimientos · 10_api_views.sql
 -- Esquema civic_api: el único contrato que consume la capa de aplicación.
 --
 -- Regla de arquitectura: los microservicios NO consultan civic.* directamente.

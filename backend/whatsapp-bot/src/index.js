@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * CivicPulse · whatsapp-bot (8001)
+ * Análisis de Sentimientos · whatsapp-bot (8001)
  *
  * Canal de WhatsApp: alertas, resúmenes y comandos desde el chat.
  *

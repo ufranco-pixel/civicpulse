@@ -1,10 +1,10 @@
 -- =============================================================================
--- CivicPulse · install.sql
+-- Análisis de Sentimientos · install.sql
 -- Instalación completa del esquema en orden de dependencias.
 --
 -- Uso:
---   createdb civicpulse
---   psql -d civicpulse -v ON_ERROR_STOP=1 -f sql/install.sql
+--   createdb oeste-sentimientos
+--   psql -d oeste-sentimientos -v ON_ERROR_STOP=1 -f sql/install.sql
 --
 -- Requiere PostgreSQL 14+. No requiere ninguna extensión: las opcionales
 -- (pg_trgm, unaccent, citext, pg_cron) se detectan y aprovechan si existen.
@@ -18,7 +18,7 @@
 
 \echo ''
 \echo '════════════════════════════════════════════════════════════'
-\echo '  CivicPulse — instalación del esquema'
+\echo '  Análisis de Sentimientos — instalación del esquema'
 \echo '════════════════════════════════════════════════════════════'
 \echo ''
 
@@ -84,7 +84,7 @@ SELECT feature, is_available FROM civic_ops.feature_flags ORDER BY feature;
 \echo '── Siguientes pasos ────────────────────────────────────────'
 \echo ''
 \echo '1. Fije el pepper de seudonimización (fuera de control de versiones):'
-\echo '     ALTER DATABASE civicpulse SET civicpulse.author_pepper = ''<secreto-largo>'';'
+\echo '     ALTER DATABASE oeste-sentimientos SET civicpulse.author_pepper = ''<secreto-largo>'';'
 \echo ''
 \echo '2. Asigne contraseñas y LOGIN a los roles:'
 \echo '     ALTER ROLE civicpulse_app    WITH LOGIN PASSWORD ''...'';'

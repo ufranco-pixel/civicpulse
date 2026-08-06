@@ -1,6 +1,6 @@
 {
-  "realm": "civicpulse",
-  "displayName": "CivicPulse",
+  "realm": "oeste-sentimientos",
+  "displayName": "Análisis de Sentimientos",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
@@ -32,7 +32,7 @@
   "clients": [
     {
       "clientId": "civicpulse-frontend",
-      "name": "CivicPulse — aplicación web",
+      "name": "Análisis de Sentimientos — aplicación web",
       "description": "Cliente público con PKCE S256. La aplicación nunca toca la API de administración de Keycloak.",
       "enabled": true,
       "publicClient": true,
@@ -94,8 +94,8 @@
       ]
     },
     {
-      "clientId": "civicpulse-workers",
-      "name": "CivicPulse — procesos de ingesta y clasificación",
+      "clientId": "oeste-sentimientos-workers",
+      "name": "Análisis de Sentimientos — procesos de ingesta y clasificación",
       "description": "Cliente confidencial con cuenta de servicio. Lo usan los workers que no tienen usuario interactivo. El secreto se genera al importar: recójalo en la consola de administración.",
       "enabled": true,
       "publicClient": false,
@@ -174,7 +174,7 @@
       "Ajuste redirectUris y webOrigins al dominio real. Nada de comodines amplios.",
       "Mantenga pkce.code.challenge.method en S256.",
       "Borre los usuarios demo y cree los reales, cada uno con su organization_id.",
-      "El secreto de civicpulse-workers se genera al importar: recójalo en la consola y guárdelo en el gestor de secretos."
+      "El secreto de oeste-sentimientos-workers se genera al importar: recójalo en la consola y guárdelo en el gestor de secretos."
     ],
     "roles": {
       "owner": "Control total, incluidas membresías y facturación.",

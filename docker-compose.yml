@@ -1,5 +1,5 @@
 # =============================================================================
-# CivicPulse · docker-compose.yml
+# Análisis de Sentimientos · docker-compose.yml
 #
 # Levanta Keycloak, los cuatro microservicios y el frontend.
 #
@@ -16,7 +16,7 @@
 # algo impide operar. Los demás servicios esperan a que termine bien.
 # =============================================================================
 
-name: ${COMPOSE_PROJECT_NAME:-civicpulse}
+name: ${COMPOSE_PROJECT_NAME:-oeste-sentimientos}
 
 x-logging: &default-logging
   driver: json-file
@@ -54,7 +54,7 @@ services:
   # ───────────────────────────────────────────────────────────────────────────
   db-preflight:
     image: postgres:16-alpine
-    container_name: civicpulse-db-preflight
+    container_name: oeste-sentimientos-db-preflight
     logging: *default-logging
     environment:
       # psql toma la conexión de aquí. Debe ser la URL síncrona (sin +asyncpg).
@@ -82,7 +82,7 @@ services:
   # ───────────────────────────────────────────────────────────────────────────
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    container_name: civicpulse-keycloak
+    container_name: oeste-sentimientos-keycloak
     restart: unless-stopped
     logging: *default-logging
     command: ["start-dev", "--import-realm", "--health-enabled=true"]
@@ -114,8 +114,8 @@ services:
   sentiment-api:
     build:
       context: ./backend/sentiment-api
-    image: civicpulse/sentiment-api:1.0.0
-    container_name: civicpulse-sentiment-api
+    image: oeste-sentimientos/sentiment-api:1.0.0
+    container_name: oeste-sentimientos-sentiment-api
     restart: unless-stopped
     logging: *default-logging
     depends_on:
@@ -134,7 +134,7 @@ services:
       POOL_RECYCLE_SEC:    ${DB_POOL_RECYCLE_SEC:-1800}
       STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-15000}
       KC_URL:              ${KC_URL}
-      KC_REALM:            ${KC_REALM:-civicpulse}
+      KC_REALM:            ${KC_REALM:-oeste-sentimientos}
       KC_AUDIENCE:         ${KC_AUDIENCE:-account}
       API_PREFIX:          /v1
       PORT:                8000
@@ -166,8 +166,8 @@ services:
     <<: *node-common
     build:
       context: ./backend/alerts-api
-    image: civicpulse/alerts-api:1.0.0
-    container_name: civicpulse-alerts-api
+    image: oeste-sentimientos/alerts-api:1.0.0
+    container_name: oeste-sentimientos-alerts-api
     depends_on:
       keycloak:
         condition: service_healthy
@@ -197,8 +197,8 @@ services:
     <<: *node-common
     build:
       context: ./backend/reports-api
-    image: civicpulse/reports-api:1.0.0
-    container_name: civicpulse-reports-api
+    image: oeste-sentimientos/reports-api:1.0.0
+    container_name: oeste-sentimientos-reports-api
     depends_on:
       keycloak:
         condition: service_healthy
@@ -228,8 +228,8 @@ services:
     <<: *node-common
     build:
       context: ./backend/whatsapp-bot
-    image: civicpulse/whatsapp-bot:1.0.0
-    container_name: civicpulse-whatsapp-bot
+    image: oeste-sentimientos/whatsapp-bot:1.0.0
+    container_name: oeste-sentimientos-whatsapp-bot
     profiles: ["whatsapp", "full"]
     depends_on:
       keycloak:
@@ -276,18 +276,18 @@ services:
         VITE_WHATSAPP_API_URL:     ${VITE_WHATSAPP_API_URL}
         VITE_API_TIMEOUT_MS:       ${VITE_API_TIMEOUT_MS:-30000}
         VITE_KEYCLOAK_URL:         ${VITE_KEYCLOAK_URL}
-        VITE_KEYCLOAK_REALM:       ${VITE_KEYCLOAK_REALM:-civicpulse}
+        VITE_KEYCLOAK_REALM:       ${VITE_KEYCLOAK_REALM:-oeste-sentimientos}
         VITE_KEYCLOAK_CLIENT_ID:   ${VITE_KEYCLOAK_CLIENT_ID:-civicpulse-frontend}
         VITE_AUTH_DISABLED:        ${VITE_AUTH_DISABLED:-false}
-        VITE_BRAND_NAME:           ${VITE_BRAND_NAME:-CivicPulse}
-        VITE_BRAND_SHORT_NAME:     ${VITE_BRAND_SHORT_NAME:-CivicPulse}
-        VITE_BRAND_PRODUCT_NAME:   ${VITE_BRAND_PRODUCT_NAME:-CivicPulse}
+        VITE_BRAND_NAME:           ${VITE_BRAND_NAME:-Análisis de Sentimientos}
+        VITE_BRAND_SHORT_NAME:     ${VITE_BRAND_SHORT_NAME:-Análisis de Sentimientos}
+        VITE_BRAND_PRODUCT_NAME:   ${VITE_BRAND_PRODUCT_NAME:-Análisis de Sentimientos}
         VITE_BRAND_TAGLINE:        ${VITE_BRAND_TAGLINE:-}
         VITE_BRAND_PRIMARY_COLOR:  ${VITE_BRAND_PRIMARY_COLOR:-#1F5FA8}
         VITE_BRAND_ACCENT_COLOR:   ${VITE_BRAND_ACCENT_COLOR:-#E0A22C}
         VITE_BRAND_SUPPORT_EMAIL:  ${VITE_BRAND_SUPPORT_EMAIL:-}
         VITE_BRAND_COPYRIGHT:      ${VITE_BRAND_COPYRIGHT:-}
-    image: civicpulse/frontend:1.0.0
+    image: oeste-sentimientos/frontend:1.0.0
     container_name: civicpulse-frontend
     restart: unless-stopped
     logging: *default-logging

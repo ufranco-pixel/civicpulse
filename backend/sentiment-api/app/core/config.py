@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     # ── Base de datos externa ────────────────────────────────────────────────
     DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://civicpulse_app@localhost:5432/civicpulse",
+        default="postgresql+asyncpg://civicpulse_app@localhost:5432/oeste-sentimientos",
         description="DSN asíncrono. Debe usar asyncpg y NO llevar sslmode en la URL.",
     )
     # TLS. asyncpg no acepta sslmode en la cadena, así que se declara aparte y
@@ -53,9 +53,9 @@ class Settings(BaseSettings):
 
     # ── Identidad (Keycloak) ─────────────────────────────────────────────────
     KC_URL: str = Field(default="http://localhost:8080")
-    KC_REALM: str = Field(default="civicpulse")
+    KC_REALM: str = Field(default="oeste-sentimientos")
     KC_AUDIENCE: str = Field(
-        default="civicpulse-api",
+        default="oeste-sentimientos-api",
         description="Claim `aud` esperado. Vacío desactiva la verificación de audiencia.",
     )
 

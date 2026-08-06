@@ -402,7 +402,7 @@ function coverPage(doc, L, data) {
 
   doc.save().rect(0, 0, doc.page.width, 150).fill(COLOR.accent).restore();
   doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(11)
-    .text('CIVICPULSE', L.left, 44, { characterSpacing: 2.5 });
+    .text('OESTE-SENTIMIENTOS', L.left, 44, { characterSpacing: 2.5 });
   doc.font('Helvetica').fontSize(9.5)
     .text('Análisis de conversación pública digital', L.left, 62);
   doc.font('Helvetica').fontSize(8.5).fillColor('#C9D6E8')
@@ -976,7 +976,7 @@ function methodologySection(doc, L, data) {
     `Campaña: ${campaign.name} (${campaign.code}). Organización: ${campaign.organization_name || 's/d'}. `
     + `Zona horaria de referencia: ${campaign.timezone || 'UTC'}. `
     + `Informe generado el ${fmtDateTime(data.generated_at)} por ${data.generated_by || 's/d'}. `
-    + 'Los datos provienen del esquema civic_api / civic_kpi de CivicPulse y pueden reproducirse consultando las '
+    + 'Los datos provienen del esquema civic_api / civic_kpi de Análisis de Sentimientos y pueden reproducirse consultando las '
     + 'mismas funciones con los mismos parámetros.',
     { size: 8.5, color: COLOR.muted },
   );
@@ -1059,9 +1059,9 @@ function renderCampaignReport(data, stream) {
       autoFirstPage: true,
       info: {
         Title: `Informe de campaña · ${data.campaign.name}`,
-        Author: 'CivicPulse',
+        Author: 'Análisis de Sentimientos',
         Subject: `Análisis de conversación pública digital · ${data.campaign.code}`,
-        Keywords: 'civicpulse, campaña, sentimiento, conversación digital',
+        Keywords: 'oeste-sentimientos, campaña, sentimiento, conversación digital',
         CreationDate: new Date(),
       },
     });

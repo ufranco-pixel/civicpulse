@@ -31,7 +31,7 @@ const { validate, asyncHandler } = require('../middleware/validate');
 
 const router = express.Router();
 
-const STORAGE_DIR = process.env.REPORTS_STORAGE_DIR || '/var/lib/civicpulse/reports';
+const STORAGE_DIR = process.env.REPORTS_STORAGE_DIR || '/var/lib/oeste-sentimientos/reports';
 const MAX_PERIOD_DAYS = Number.parseInt(process.env.REPORTS_MAX_PERIOD_DAYS || '365', 10);
 const MAX_CONCURRENT = Number.parseInt(process.env.REPORTS_MAX_CONCURRENT || '2', 10);
 
@@ -267,7 +267,7 @@ router.get(
       );
     }
 
-    const filename = `civicpulse-${job.campaign_code}-${job.id.slice(0, 8)}.pdf`;
+    const filename = `oeste-sentimientos-${job.campaign_code}-${job.id.slice(0, 8)}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     if (job.stats && job.stats.bytes) res.setHeader('Content-Length', String(job.stats.bytes));

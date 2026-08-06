@@ -1,5 +1,5 @@
 # =============================================================================
-# CivicPulse · docker-compose.prod.yml
+# Análisis de Sentimientos · docker-compose.prod.yml
 # Despliegue en producción detrás de un Traefik ya existente.
 #
 #   docker compose -f docker-compose.prod.yml up -d --build
@@ -26,7 +26,7 @@
 # cada redirección.
 # =============================================================================
 
-name: ${COMPOSE_PROJECT_NAME:-civicpulse}
+name: ${COMPOSE_PROJECT_NAME:-oeste-sentimientos}
 
 # ── Red de Traefik ──────────────────────────────────────────────────────────
 # Ya existe: este compose se une a ella, no la crea.
@@ -74,7 +74,7 @@ services:
   # ───────────────────────────────────────────────────────────────────────────
   db-preflight:
     image: postgres:16-alpine
-    container_name: civicpulse-db-preflight
+    container_name: oeste-sentimientos-db-preflight
     logging: *default-logging
     environment:
       DATABASE_URL:      ${DATABASE_URL}
@@ -106,9 +106,9 @@ services:
   # ───────────────────────────────────────────────────────────────────────────
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    container_name: civicpulse-keycloak
+    container_name: oeste-sentimientos-keycloak
     # Perfil opcional: si ya tiene un Keycloak (auth.oeste.mx), NO lo levante.
-    # Cree ahí el realm `civicpulse` importando docs/keycloak/civicpulse-realm.json
+    # Cree ahí el realm `oeste-sentimientos` importando docs/keycloak/civicpulse-realm.json
     # y apunte OIDC_ISSUER / OIDC_JWKS_URI a él.
     #   Con Keycloak propio:  docker compose -f docker-compose.prod.yml --profile keycloak up -d
     profiles: ["keycloak"]
@@ -164,8 +164,8 @@ services:
   sentiment-api:
     <<: *service-common
     build: { context: ./backend/sentiment-api }
-    image: civicpulse/sentiment-api:${IMAGE_TAG:-1.0.0}
-    container_name: civicpulse-sentiment-api
+    image: oeste-sentimientos/sentiment-api:${IMAGE_TAG:-1.0.0}
+    container_name: oeste-sentimientos-sentiment-api
     depends_on:
       db-preflight:
         condition: service_completed_successfully
@@ -181,7 +181,7 @@ services:
       # URL del Keycloak que valida los tokens. Con uno externo va la pública;
       # con el del perfil `keycloak`, http://keycloak:8080.
       KC_URL:      ${KC_URL:?defina KC_URL}
-      KC_REALM:    ${KC_REALM:-civicpulse}
+      KC_REALM:    ${KC_REALM:-oeste-sentimientos}
       KC_AUDIENCE: ${KC_AUDIENCE:-account}
       API_PREFIX:  /v1
       PORT:        8000
@@ -221,8 +221,8 @@ services:
   alerts-api:
     <<: *service-common
     build: { context: ./backend/alerts-api }
-    image: civicpulse/alerts-api:${IMAGE_TAG:-1.0.0}
-    container_name: civicpulse-alerts-api
+    image: oeste-sentimientos/alerts-api:${IMAGE_TAG:-1.0.0}
+    container_name: oeste-sentimientos-alerts-api
     depends_on:
       db-preflight:
         condition: service_completed_successfully
@@ -257,8 +257,8 @@ services:
   reports-api:
     <<: *service-common
     build: { context: ./backend/reports-api }
-    image: civicpulse/reports-api:${IMAGE_TAG:-1.0.0}
-    container_name: civicpulse-reports-api
+    image: oeste-sentimientos/reports-api:${IMAGE_TAG:-1.0.0}
+    container_name: oeste-sentimientos-reports-api
     depends_on:
       db-preflight:
         condition: service_completed_successfully
@@ -293,8 +293,8 @@ services:
   whatsapp-bot:
     <<: *service-common
     build: { context: ./backend/whatsapp-bot }
-    image: civicpulse/whatsapp-bot:${IMAGE_TAG:-1.0.0}
-    container_name: civicpulse-whatsapp-bot
+    image: oeste-sentimientos/whatsapp-bot:${IMAGE_TAG:-1.0.0}
+    container_name: oeste-sentimientos-whatsapp-bot
     profiles: ["whatsapp", "full"]
     networks: [civicnet]
     depends_on:
@@ -336,18 +336,18 @@ services:
         VITE_WHATSAPP_API_URL:     ""
         VITE_API_TIMEOUT_MS:       ${VITE_API_TIMEOUT_MS:-30000}
         VITE_KEYCLOAK_URL:         https://${AUTH_DOMAIN}
-        VITE_KEYCLOAK_REALM:       ${KC_REALM:-civicpulse}
+        VITE_KEYCLOAK_REALM:       ${KC_REALM:-oeste-sentimientos}
         VITE_KEYCLOAK_CLIENT_ID:   ${KC_CLIENT_ID:-civicpulse-frontend}
         VITE_AUTH_DISABLED:        "false"
-        VITE_BRAND_NAME:           ${VITE_BRAND_NAME:-CivicPulse}
-        VITE_BRAND_SHORT_NAME:     ${VITE_BRAND_SHORT_NAME:-CivicPulse}
-        VITE_BRAND_PRODUCT_NAME:   ${VITE_BRAND_PRODUCT_NAME:-CivicPulse}
+        VITE_BRAND_NAME:           ${VITE_BRAND_NAME:-Análisis de Sentimientos}
+        VITE_BRAND_SHORT_NAME:     ${VITE_BRAND_SHORT_NAME:-Análisis de Sentimientos}
+        VITE_BRAND_PRODUCT_NAME:   ${VITE_BRAND_PRODUCT_NAME:-Análisis de Sentimientos}
         VITE_BRAND_TAGLINE:        ${VITE_BRAND_TAGLINE:-}
         VITE_BRAND_PRIMARY_COLOR:  ${VITE_BRAND_PRIMARY_COLOR:-#1F5FA8}
         VITE_BRAND_ACCENT_COLOR:   ${VITE_BRAND_ACCENT_COLOR:-#E0A22C}
         VITE_BRAND_SUPPORT_EMAIL:  ${VITE_BRAND_SUPPORT_EMAIL:-}
         VITE_BRAND_COPYRIGHT:      ${VITE_BRAND_COPYRIGHT:-}
-    image: civicpulse/frontend:${IMAGE_TAG:-1.0.0}
+    image: oeste-sentimientos/frontend:${IMAGE_TAG:-1.0.0}
     container_name: civicpulse-frontend
     restart: unless-stopped
     logging: *default-logging

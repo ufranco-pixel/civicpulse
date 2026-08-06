@@ -1,6 +1,6 @@
 # Base de datos externa
 
-CivicPulse no gestiona PostgreSQL. Se conecta a la instancia que usted indique en
+Análisis de Sentimientos no gestiona PostgreSQL. Se conecta a la instancia que usted indique en
 `DATABASE_URL`. Este documento reúne lo que cambia respecto a un despliegue con la base en
 un contenedor propio, y lo que hay que ajustar en el servidor.
 
@@ -194,7 +194,7 @@ pg_dump "$DATABASE_URL" \
   --table='civic.sources'       --table='civic.alert_rules' \
   --table='civic.ai_models'     --table='civic.prompt_*' \
   --table='civic.eval_*' \
-  -f civicpulse-config.sql
+  -f oeste-sentimientos-config.sql
 ```
 
 **Las vistas materializadas no necesitan respaldo**: se reconstruyen con

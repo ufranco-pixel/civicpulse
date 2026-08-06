@@ -1,9 +1,9 @@
 -- =============================================================================
--- CivicPulse · prompts/load_prompts.sql
+-- Análisis de Sentimientos · prompts/load_prompts.sql
 -- Registra las plantillas de prompt y su primera versión en la base de datos.
 --
 -- Uso:
---   psql -d civicpulse -v ON_ERROR_STOP=1 -f prompts/load_prompts.sql
+--   psql -d oeste-sentimientos -v ON_ERROR_STOP=1 -f prompts/load_prompts.sql
 --
 -- Idempotente. Las versiones ya promovidas a 'active' son inmutables: un trigger
 -- (civic.prompt_version_guard) impide modificarlas. Para cambiar un prompt hay

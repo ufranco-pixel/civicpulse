@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 09_indicators.sql
+-- Análisis de Sentimientos · 09_indicators.sql
 -- Biblioteca de indicadores políticos: registro, funciones y evaluador de reglas.
 --
 -- Principio rector: un indicador no es una consulta suelta en el frontend. Es un

@@ -1,5 +1,5 @@
 -- =============================================================================
--- CivicPulse · 07_evaluation.sql
+-- Análisis de Sentimientos · 07_evaluation.sql
 -- Evaluación de clasificadores: conjunto dorado, corridas, predicciones y métricas.
 --
 -- Por qué esto existe: un tablero de sentimiento sin evaluación es un generador

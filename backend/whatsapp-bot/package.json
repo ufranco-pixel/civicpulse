@@ -1,8 +1,8 @@
 {
-  "name": "@civicpulse/whatsapp-bot",
+  "name": "@oeste-sentimientos/whatsapp-bot",
   "version": "1.0.0",
   "private": true,
-  "description": "CivicPulse · canal de WhatsApp: alertas con advertencia metodológica, resúmenes de campaña y comandos desde el chat. Respeta la veda electoral y el consentimiento.",
+  "description": "Análisis de Sentimientos · canal de WhatsApp: alertas con advertencia metodológica, resúmenes de campaña y comandos desde el chat. Respeta la veda electoral y el consentimiento.",
   "type": "commonjs",
   "main": "src/index.js",
   "engines": {

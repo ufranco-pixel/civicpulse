@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * CivicPulse · alerts-api (8003)
+ * Análisis de Sentimientos · alerts-api (8003)
  *
  * Expone las alertas, sus reglas y sus entregas, y difunde en tiempo real por
  * SSE lo que el planificador va creando.

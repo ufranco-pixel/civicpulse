@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
-# CivicPulse · scripts/verify-deploy.sh
+# Análisis de Sentimientos · scripts/verify-deploy.sh
 # Comprueba que el despliegue quedó bien enrutado y respondiendo.
 #
 #   sh scripts/verify-deploy.sh                    # lee APP_DOMAIN de .env
-#   sh scripts/verify-deploy.sh civicpulse.oeste.mx
+#   sh scripts/verify-deploy.sh sentimientos.oeste.mx
 #
 # Verifica desde FUERA, contra el dominio público: es lo mismo que verá el
 # navegador. Un contenedor sano al que Traefik no enruta bien sigue estando roto.
@@ -17,7 +17,7 @@ if [ -z "$DOMAIN" ] && [ -f .env ]; then
 fi
 AUTH=$(grep -E '^AUTH_DOMAIN=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' ')
 REALM=$(grep -E '^KC_REALM=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' ')
-REALM="${REALM:-civicpulse}"
+REALM="${REALM:-oeste-sentimientos}"
 
 if [ -z "$DOMAIN" ]; then
     echo "Uso: sh scripts/verify-deploy.sh <dominio>"; exit 1

@@ -68,7 +68,7 @@ export function ReportsPage() {
 
   async function download(jobId) {
     try {
-      await downloadReport(jobId, `civicpulse-${code}-${String(jobId).slice(0, 8)}.pdf`);
+      await downloadReport(jobId, `oeste-sentimientos-${code}-${String(jobId).slice(0, 8)}.pdf`);
     } catch (err) {
       toast.error(err.message || 'No se pudo descargar el informe.');
     }
