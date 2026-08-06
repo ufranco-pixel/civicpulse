@@ -3,11 +3,18 @@
 /**
  * Formateo de mensajes de WhatsApp.
  *
- * Regla que no se negocia: ningún mensaje sale con un número desnudo. Todo
- * indicador viaja con su tamaño de muestra y con la advertencia metodológica
- * que la base publica en civic_kpi.metric_registry y que civic_api.alerts
- * expone como `metric_caveat`. Un "net_sentiment -12" sobre 8 comentarios y
- * uno sobre 8 000 se leen igual en un teléfono si sólo se manda el valor.
+ * Dos formatos con criterios distintos, a propósito:
+ *
+ *  · `formatAlert` es un AVISO. Severidad, título y el comentario, y nada más.
+ *    Llevaba también campaña, indicador, tamaño de muestra, ventana y la
+ *    advertencia metodológica; en un teléfono eso ocupaba media pantalla y
+ *    enterraba el texto del comentario. Se recortó a peticion del cliente.
+ *    El detalle completo sigue en la alerta del tablero.
+ *
+ *  · `formatDigest` es un INFORME, y ahí sí van los porcentajes acompañados de
+ *    su tamaño de muestra y de la advertencia metodológica. Un
+ *    "net_sentiment -12" sobre 8 comentarios y otro sobre 8 000 se leen igual
+ *    en un teléfono si solo se manda el valor.
  */
 
 // Tope real de un mensaje de WhatsApp. Se recorta antes de enviar: un mensaje
@@ -89,15 +96,7 @@ function pct(value, decimals = 1) {
   return formatted === 's/d' ? formatted : `${formatted} %`;
 }
 
-/** Valor con su unidad, tal como la declara el registro de indicadores. */
-function withUnit(value, unit) {
-  const formatted = num(value, 2);
-  if (formatted === 's/d') return formatted;
-  if (!unit || unit === 'count') return int(value);
-  if (unit === 'percent' || unit === 'pct') return `${formatted} %`;
-  return `${formatted} ${unit}`;
-}
-
+/** Fecha y hora en UTC, corta, para el resumen diario. */
 function fmtDateTime(value) {
   if (!value) return 's/d';
   const d = value instanceof Date ? value : new Date(value);
@@ -114,42 +113,24 @@ function formatAlert(alert) {
   const emoji = SEVERITY_EMOJI[alert.severity_code] || '⚪';
   const lines = [];
 
+  // Mensaje deliberadamente corto: severidad, tipo, título y el texto.
+  //
+  // Antes llevaba además una lista de datos (campaña, fuente, indicador,
+  // tamaño de muestra, ventana) y la advertencia metodológica al pie. En un
+  // WhatsApp eso ocupaba media pantalla y enterraba lo único que importa, que
+  // es el comentario. Todo ese detalle sigue estando en la alerta del tablero,
+  // que es donde se analiza; el WhatsApp es un aviso, no el informe.
   lines.push(`${emoji} *${(alert.severity_label || alert.severity_code || 'Alerta').toUpperCase()}* · ${alert.alert_type_label || alert.alert_type_code || ''}`.trim());
   lines.push(`*${alert.title || 'Alerta Análisis de Sentimientos'}*`);
   lines.push('');
   if (alert.message) lines.push(alert.message);
 
-  const facts = [];
-  if (alert.campaign_code) facts.push(`Campaña: ${alert.campaign_code}`);
-  if (alert.contender_name) facts.push(`Contendiente: ${alert.contender_name}`);
-  if (alert.source_name) facts.push(`Fuente: ${alert.source_name}`);
-  if (alert.topic_category) facts.push(`Tema: ${alert.topic_category}`);
-  if (alert.metric) {
-    const label = alert.metric_label || alert.metric;
-    facts.push(`${label}: ${withUnit(alert.observed_value, alert.metric_unit)} (umbral ${withUnit(alert.threshold_value, alert.metric_unit)})`);
-  }
-  // El tamaño de muestra no es un adorno: es lo que distingue una señal de un
-  // ruido de tres publicaciones.
-  if (alert.sample_size !== null && alert.sample_size !== undefined) {
-    facts.push(`Muestra: ${int(alert.sample_size)} contenidos`);
-  }
-  if (alert.window_start && alert.window_end) {
-    facts.push(`Ventana: ${fmtDateTime(alert.window_start)} → ${fmtDateTime(alert.window_end)}`);
-  }
-  if (facts.length) {
-    lines.push('');
-    lines.push(facts.map((f) => `• ${f}`).join('\n'));
-  }
-
+  // La veda sí se mantiene: es la única línea con consecuencias legales, y
+  // ocupa un renglón.
   if (alert.during_blackout) {
     lines.push('');
     lines.push('🚫 _Generada durante la veda electoral._');
   }
-
-  // Obligatorio. Si el indicador no trae caveat propio, va al menos la nota
-  // general del sistema: ninguna plantilla sale sin advertencia.
-  lines.push('');
-  lines.push(`⚠️ _${alert.metric_caveat || METHODOLOGY_NOTE}_`);
 
   return truncate(lines.join('\n'));
 }
