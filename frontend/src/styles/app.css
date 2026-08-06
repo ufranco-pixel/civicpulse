@@ -172,19 +172,27 @@
 }
 .cp-header-titulo {
   font-family: var(--font-display);
-  font-size: var(--fs-lg); font-weight: var(--fw-semi);
-  margin: 0; line-height: 1.2;
+  /* La barra es ahora el único sitio donde aparece el título de la página, así
+     que pesa lo que pesaba un <h1> dentro del contenido. Con --fs-lg se leía
+     como un subtítulo perdido entre los controles. */
+  font-size: var(--fs-2xl); font-weight: var(--fw-semi);
+  margin: 0; line-height: 1.15;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cp-header-desc {
-  margin: 0; font-size: var(--fs-2xs); color: var(--c-text-subtle);
+  margin: 0; font-size: var(--fs-sm); color: var(--c-text-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cp-header-periodo {
   display: flex; align-items: center; gap: var(--sp-2);
   flex: 0 0 auto;
 }
-.cp-header-periodo .select { width: auto; }
+.cp-header-periodo .field-label { font-size: var(--fs-sm); }
+.cp-header-periodo .select { width: auto; font-size: var(--fs-base); }
+
+/* La barra crece con el texto: con el título a --fs-2xl más la descripción
+   debajo, la altura mínima anterior recortaba el descendente de la «g». */
+.cp-header { min-height: calc(var(--layout-header) + 16px); }
 
 /* ── Tooltip ──────────────────────────────────────────────────────────── */
 .cp-tip { position: relative; display: inline-flex; }
@@ -499,8 +507,8 @@
   /* En movil la barra lleva el boton de menu, el titulo, el periodo y la
      cuenta. El titulo baja de tamano y el selector se estrecha para que los
      cuatro quepan en una sola fila sin desbordar. */
-  .cp-header-titulo { font-size: var(--fs-md); }
-  .cp-header-periodo .select { max-width: 128px; font-size: var(--fs-xs); }
+  .cp-header-titulo { font-size: var(--fs-lg); }
+  .cp-header-periodo .select { max-width: 132px; font-size: var(--fs-sm); }
 }
 
 /* Fuera de movil no hay cajon ni fondo oscurecido. */
@@ -534,7 +542,7 @@
   background: var(--c-surface); color: var(--c-text);
   cursor: pointer;
 }
-.cp-header-titulo {
-  font-family: var(--font-display); font-size: var(--fs-md); font-weight: var(--fw-semi);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
-}
+/* El .cp-header-titulo que había aquí quedó de cuando la barra solo mostraba
+   el nombre de la campaña en móvil. Al ir después del bloque de arriba en el
+   fichero, ganaba la cascada y dejaba el título en --fs-md siempre, anulando
+   el tamaño de la barra. La regla buena está junto a .cp-header-page. */

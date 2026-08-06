@@ -19,11 +19,21 @@ RUN apk add --no-cache \
       wget \
       tini
 
+# WA_SESSION_PATH debe ser LA MISMA ruta que monta docker-compose.
+#
+# Antes aquí decía /var/lib/oeste-sentimientos/wa-session mientras el compose
+# montaba el volumen en /app/wa-session. La carpeta que se preparaba con dueño
+# `node` no era la que se usaba, y sobre la que sí se usaba Docker creaba el
+# punto de montaje como root. De ahí el «EACCES: permission denied, mkdir».
+#
+# El comentario va fuera de la instrucción, no dentro de la continuación de
+# línea: los comentarios intercalados en un ENV de varias líneas dependen del
+# motor de construcción y no merece la pena arriesgarse.
 ENV NODE_ENV=production \
     PORT=8001 \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    WA_SESSION_PATH=/var/lib/oeste-sentimientos/wa-session
+    WA_SESSION_PATH=/app/wa-session
 
 WORKDIR /app
 
@@ -34,14 +44,23 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --chown=node:node src ./src
 
-# El directorio de sesión se crea con el dueño correcto ANTES de bajar de
-# privilegios: si se crea después, node no puede escribir y LocalAuth pide QR
-# en cada arranque.
-RUN mkdir -p "$WA_SESSION_PATH" && chown -R node:node "$WA_SESSION_PATH"
+# El directorio de sesión DEBE existir en la imagen y con dueño `node`.
+#
+# No es solo para que node pueda escribir: es lo que determina el dueño del
+# volumen. Cuando Docker monta un volumen con nombre vacío sobre una ruta que
+# YA existe en la imagen, copia su contenido y sus permisos. Si la ruta no
+# existe, Docker la crea como root:root y el usuario sin privilegios no puede
+# ni crear la subcarpeta de la sesión.
+#
+# Chromium también necesita escribir su perfil aquí, así que 0700 no basta si
+# algún día cambia el uid.
+RUN mkdir -p "$WA_SESSION_PATH" \
+ && chown -R node:node "$WA_SESSION_PATH" \
+ && chmod 0770 "$WA_SESSION_PATH"
 
-# Volumen para la sesión de WhatsApp. Sin persistencia hay que escanear el QR
-# en cada despliegue, lo que en la práctica significa que el canal se cae.
-VOLUME ["/var/lib/oeste-sentimientos/wa-session"]
+# Sin VOLUME aquí a propósito: docker-compose ya declara `wasession` y lo monta
+# en esta ruta. Un VOLUME en el Dockerfile crearía además un volumen anónimo
+# en cada `docker run` suelto, que nadie limpia y ocupa disco en silencio.
 
 # La versión anterior corría como root: un Chromium con --no-sandbox ejecutando
 # contenido remoto y con uid 0 es la peor combinación posible del sistema.

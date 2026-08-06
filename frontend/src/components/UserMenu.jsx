@@ -1,17 +1,19 @@
 /**
- * Menu de usuario: identidad y cierre de sesion.
+ * Menu de usuario: identidad, numeros de WhatsApp y cierre de sesion.
  *
- * Solo lleva cerrar sesion. Antes mostraba tambien los roles del token, el
- * selector de tema y un aviso de autenticacion desactivada; para un tablero de
- * seguimiento eso es ruido de configuracion en el sitio de mas trafico visual.
+ * Antes mostraba tambien los roles del token, el selector de tema y un aviso
+ * de autenticacion desactivada; para un tablero de seguimiento eso es ruido de
+ * configuracion en el sitio de mas trafico visual.
  */
 import { useEffect, useRef, useState } from 'react';
-import { LogOut, UserRound } from 'lucide-react';
+import { LogOut, Smartphone, UserRound } from 'lucide-react';
 import { useAuth } from '../auth/useAuth.js';
+import WhatsappNumbersModal from './WhatsappNumbersModal.jsx';
 
 export function UserMenu() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [numeros, setNumeros] = useState(false);
   const wrapper = useRef(null);
 
   useEffect(() => {
@@ -56,11 +58,24 @@ export function UserMenu() {
             </div>
           </div>
 
+          {/* Abre un modal y no un panel dentro del menú: la tabla de números
+              no cabe en 280 px sin quedar apretada. */}
+          <button
+            type="button"
+            className="btn btn-sm cp-menu-action"
+            role="menuitem"
+            onClick={() => { setOpen(false); setNumeros(true); }}
+          >
+            <Smartphone size={14} aria-hidden="true" /> Números de WhatsApp
+          </button>
+
           <button type="button" className="btn btn-sm cp-menu-action" role="menuitem" onClick={logout}>
             <LogOut size={14} aria-hidden="true" /> Cerrar sesion
           </button>
         </div>
       )}
+
+      {numeros && <WhatsappNumbersModal onClose={() => setNumeros(false)} />}
     </div>
   );
 }

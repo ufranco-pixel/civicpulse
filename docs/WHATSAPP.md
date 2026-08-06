@@ -93,7 +93,6 @@ WA_PROVIDER=wwebjs
 # WA_OVERRIDE_PROVIDER=mock
 
 # ── whatsapp-web.js ──
-WA_SESSION_PATH=/var/lib/oeste-sentimientos/wa-session
 WA_CLIENT_ID=oeste-sentimientos
 WA_AUTOSTART=true
 WA_PRINT_QR_TERMINAL=true
@@ -122,8 +121,10 @@ El QR caduca en unos 60 segundos. Si expira, `POST /bot/reconnect` genera otro.
 
 Tres cosas que conviene saber antes de usar este proveedor:
 
-- **El volumen persistente no es opcional.** Si `WA_SESSION_PATH` no sobrevive
-  al reinicio del contenedor, hay que escanear el QR en cada despliegue.
+- **El volumen persistente no es opcional.** La sesión vive en el volumen
+  `wasession`, montado en `/app/wa-session`. Si se borra, hay que escanear el
+  QR de nuevo. Esa ruta la fijan el Dockerfile y el compose, y deben coincidir:
+  cuando divergían, el arranque moría con `EACCES: permission denied, mkdir`.
 - **Quien tenga el QR se lleva la sesión.** Trátelo como una contraseña.
 - **No es un canal oficial de Meta.** Funciona bien y es gratis, pero un
   volumen alto de mensajes a números que no le han escrito antes puede acabar
@@ -184,6 +185,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 | Entregas en `pending` que no avanzan | `WA_DISPATCH_ENABLED=false`, o el bot no arranca |
 | `failed` con «WhatsApp no conectado» | La sesión se cayó. Vuelva a vincular con el QR |
 | `failed` con «proveedor desconocido» | Errata en `WA_PROVIDER` |
+| `EACCES: permission denied, mkdir '/app/wa-session/...'` | El volumen se creó con dueño `root`. Detener, `docker volume rm oeste-sentimientos_wasession`, reconstruir la imagen y levantar |
 | `suppressed` con `veda_electoral` | Correcto: en veda se registra pero no se envía |
 | Llega a unos sí y a otros no | Los que no reciben tienen `min_severity` por encima de la alerta |
 

@@ -23,7 +23,10 @@ const qrcodeTerminal = require('qrcode-terminal');
 
 const { logger } = require('../logger');
 
-const SESSION_PATH = process.env.WA_SESSION_PATH || '/var/lib/oeste-sentimientos/wa-session';
+// El valor por defecto coincide con el WA_SESSION_PATH del Dockerfile y con
+// la ruta que monta docker-compose. Cuando divergían, la carpeta preparada
+// con dueño `node` no era la que se usaba y el arranque moría con EACCES.
+const SESSION_PATH = process.env.WA_SESSION_PATH || '/app/wa-session';
 const CLIENT_ID = process.env.WA_CLIENT_ID || 'oeste-sentimientos';
 const PRINT_QR_TERMINAL = String(process.env.WA_PRINT_QR_TERMINAL || 'true').toLowerCase() === 'true';
 
