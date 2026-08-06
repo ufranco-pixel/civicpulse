@@ -15,10 +15,42 @@
 set -u
 
 TOKEN="${1:-}"
-[ -f .env ] && . ./.env 2>/dev/null
+
+# La URL se extrae con grep, NO con `. ./.env`.
+#
+# Hacer source de un .env es frágil: los valores sin comillas con `?`, `&` o
+# `#` los interpreta el shell y la variable llega truncada o vacía. Es lo que
+# hacía que este paso dijera «sin conexión» aunque la cadena fuera correcta.
+if [ -z "${DATABASE_URL:-}" ] && [ -f .env ]; then
+    DATABASE_URL=$(grep -E '^[[:space:]]*DATABASE_URL=' .env | head -1 \
+                   | sed 's/^[[:space:]]*DATABASE_URL=//' | tr -d '"'"'"' ' | sed 's/[[:space:]]*#.*$//')
+fi
 
 PGCONN="${DATABASE_URL:-}"
-psql() { command psql ${PGCONN:+"$PGCONN"} "$@"; }
+
+# El servidor puede no tener el cliente psql instalado: vive dentro de los
+# contenedores, no necesariamente en el anfitrión. Sin esta comprobación el
+# «command not found» se confundía con «la base no responde», que manda a
+# revisar la red cuando el problema es que falta un binario.
+if command -v psql >/dev/null 2>&1; then
+    psql() { command psql ${PGCONN:+"$PGCONN"} "$@"; }
+    PSQL_VIA="local"
+elif command -v docker >/dev/null 2>&1; then
+    # Alternativa: psql prestado de la imagen de postgres, en la red interna
+    # del proyecto para poder alcanzar la base igual que lo hacen los servicios.
+    NET=$(docker network ls --format '{{.Name}}' | grep -E 'civicnet' | head -1)
+    psql() {
+        docker run --rm -i ${NET:+--network "$NET"} \
+            -e PGCONNECT_TIMEOUT=10 postgres:16-alpine \
+            psql ${PGCONN:+"$PGCONN"} "$@" 2>/dev/null
+    }
+    PSQL_VIA="docker"
+else
+    echo ''
+    echo '  ❌ No hay cliente psql ni docker disponibles. Instale uno:'
+    echo '       sudo apt-get install -y postgresql-client'
+    exit 1
+fi
 
 echo ''
 echo '════════════════════════════════════════════════════════════'
@@ -71,8 +103,15 @@ fi
 # ── 3. Base de datos ────────────────────────────────────────────────────────
 echo ''
 echo '▸ 3. Contenido de la base'
+echo "  (cliente psql: ${PSQL_VIA})"
+if [ -z "$PGCONN" ]; then
+    echo '  ❌ DATABASE_URL vacía. Ejecute desde el directorio del proyecto (donde está .env)'
+    echo "     o expórtela:  DATABASE_URL='postgresql://…' sh scripts/diagnose.sh"
+    exit 1
+fi
 if ! psql -tAc 'SELECT 1' >/dev/null 2>&1; then
-    echo '  ❌ Sin conexión. Exporte DATABASE_URL o ejecute desde el directorio del proyecto.'
+    echo '  ❌ La base no responde con esa cadena. Detalle:'
+    psql -c 'SELECT 1' 2>&1 | sed 's/^/       /' | head -4
     exit 1
 fi
 

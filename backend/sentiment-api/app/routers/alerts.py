@@ -11,7 +11,7 @@ import json
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 
 from app.core.auth import (
     ROLE_ADMIN,
@@ -319,6 +319,15 @@ async def patch_rule(ctx: Ctx, rule_id: UUID, body: AlertRulePatch) -> AlertRule
 @router.delete(
     "/alert-rules/{rule_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    # response_model=None y response_class=Response son explícitos a proposito.
+    #
+    # Sin ellos, algunas versiones de FastAPI infieren el modelo de respuesta a
+    # partir de la anotación `-> None`, lo convierten en un response_model y
+    # abortan al registrar la ruta con «Status code 204 must not have a response
+    # body». El fallo ocurre al IMPORTAR el módulo, así que no rompe una
+    # petición: impide que arranque el servicio entero.
+    response_model=None,
+    response_class=Response,
     dependencies=[Depends(require_min_role(ROLE_STRATEGIST))],
     summary="Da de baja una regla (baja lógica)",
 )
