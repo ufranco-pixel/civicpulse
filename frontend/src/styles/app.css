@@ -125,7 +125,6 @@
   background: var(--c-danger); color: #fff;
   font-size: var(--fs-2xs); font-weight: var(--fw-bold); text-align: center;
 }
-.cp-rail-toggle { margin-top: auto; justify-content: center; }
 
 .cp-main { display: flex; flex-direction: column; min-width: 0; }
 .cp-header {
@@ -408,30 +407,103 @@
 @media (max-width: 1024px) {
   .cp-detail { grid-template-columns: minmax(0, 1fr); }
 }
-@media (max-width: 720px) {
+/* ── Movil: el rail se convierte en cajon lateral ─────────────────────────
+   Antes el rail se apilaba arriba como franja horizontal con desplazamiento
+   lateral. Con nueve secciones eso obligaba a arrastrar la tira para llegar a
+   las ultimas y robaba media pantalla al contenido, que es lo unico que
+   interesa en un telefono.
+
+   Ahora sale de fuera de pantalla sobre el contenido, con fondo oscurecido, y
+   se cierra al navegar, al tocar fuera o con Escape.
+
+   El corte es 640px, el mismo `BREAKPOINTS.mobile` que usa useResponsive.js.
+   Antes el CSS cortaba en 720 y el JS en 640: entre esos dos anchos el rail se
+   pintaba horizontal mientras el JS seguia creyendolo vertical. */
+@media (max-width: 640px) {
   .cp-shell, .cp-shell-collapsed { grid-template-columns: 1fr; }
-  .cp-rail { position: static; height: auto; flex-direction: row; align-items: center; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--c-border); }
-  .cp-rail-brand { padding: 0 var(--sp-2) 0 0; }
-  /* En movil el rail pasa a ser una barra horizontal: la foto se encoge y el
-     separador cambia de borde inferior a borde derecho, o cortaria la fila. */
-  .cp-rail-perfil {
-    padding: 0 var(--sp-3) 0 0; margin: 0;
-    border-bottom: 0; border-right: 1px solid var(--c-border);
-    flex: 0 0 auto;
+
+  .cp-rail {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: min(280px, 82vw); height: 100dvh;
+    z-index: var(--z-modal);
+    transform: translateX(-100%);
+    /* `visibility` es lo que de verdad cierra el cajon: solo con translateX
+       los enlaces siguen siendo enfocables con el tabulador aunque esten
+       fuera de pantalla, y el foco se va a un menu invisible.
+       El retardo en la transicion de visibility deja que la animacion de
+       salida termine antes de ocultarlo. */
+    visibility: hidden;
+    transition: transform .22s ease, visibility 0s linear .22s;
+    border-right: 1px solid var(--c-border);
+    box-shadow: 4px 0 24px rgb(0 0 0 / 18%);
   }
-  .cp-rail-perfil .cp-rail-foto { width: 34px; height: 34px; border-width: 2px; }
-  .cp-rail-perfil-texto { display: none; }
-  /* En la barra horizontal `margin-top: auto` no empuja nada: el equivalente
-     es `margin-left: auto`, que lo manda al extremo derecho. */
-  .cp-rail-oeste {
-    margin-top: 0; margin-left: auto;
-    padding: 0 0 0 var(--sp-3);
-    border-top: 0; border-left: 1px solid var(--c-border);
-    flex: 0 0 auto;
+  .cp-rail.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform .22s ease, visibility 0s;
   }
-  .cp-rail-oeste-logo { width: 30px; height: 30px; flex-basis: 30px; }
-  .cp-rail-oeste-texto { display: none; }
-  .cp-nav { flex-direction: row; }
+
+  /* 100dvh y no 100vh: en moviles la barra del navegador entra y sale, y con
+     vh el pie del cajon queda por debajo del borde visible. */
+
+  .cp-drawer-scrim {
+    position: fixed; inset: 0;
+    z-index: calc(var(--z-modal) - 1);
+    background: rgb(0 0 0 / 45%);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .cp-shell-drawer-open .cp-drawer-scrim { opacity: 1; pointer-events: auto; }
+
+  /* Dentro del cajon el rail va expandido: hay ancho de sobra. */
+  .cp-rail-perfil { padding: var(--sp-2) var(--sp-2) var(--sp-4); }
+  .cp-rail-perfil .cp-rail-foto { width: 84px; height: 84px; }
+  .cp-nav-item { padding: var(--sp-3); font-size: var(--fs-base); }
+
+  .cp-header { padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); }
   .cp-content { padding: var(--sp-4) var(--sp-3); }
   .cp-toasts { left: var(--sp-3); right: var(--sp-3); max-width: none; }
+
+  /* El contenido denso no cabe a 640px: las rejillas pasan a una columna y las
+     tablas anchas se desplazan dentro de su contenedor, no de la pagina. */
+  .grid, .grid-2, .grid-3, .grid-4, .grid-auto { grid-template-columns: minmax(0, 1fr); }
+  .cp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cp-page-head { flex-wrap: wrap; gap: var(--sp-2); }
+  .cp-page-head h1 { font-size: var(--fs-xl); }
+}
+
+/* Fuera de movil no hay cajon ni fondo oscurecido. */
+.cp-drawer-scrim { display: none; }
+@media (max-width: 640px) { .cp-drawer-scrim { display: block; } }
+
+/* ── Boton de contraer ────────────────────────────────────────────────────
+   Redondo y de solo icono. Antes era un boton con la palabra «Contraer» a lo
+   ancho del rail, que pesaba visualmente tanto como una seccion de navegacion
+   sin serlo. */
+.cp-rail-toggle {
+  margin-top: auto;
+  align-self: center;
+  display: grid; place-items: center;
+  width: 28px; height: 28px;
+  border: 1px solid var(--c-border); border-radius: 50%;
+  background: var(--c-surface-2); color: var(--c-text-subtle);
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.cp-rail-toggle:hover {
+  color: var(--c-text); border-color: var(--c-border-strong);
+  background: var(--c-surface-3);
+}
+
+/* ── Cabecera en movil ──────────────────────────────────────────────────── */
+.cp-burger {
+  display: grid; place-items: center;
+  width: 38px; height: 38px; flex: 0 0 38px;
+  border: 1px solid var(--c-border); border-radius: var(--r-sm);
+  background: var(--c-surface); color: var(--c-text);
+  cursor: pointer;
+}
+.cp-header-titulo {
+  font-family: var(--font-display); font-size: var(--fs-md); font-weight: var(--fw-semi);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }

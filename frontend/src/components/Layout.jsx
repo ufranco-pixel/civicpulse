@@ -5,11 +5,11 @@
  * cada pagina abriera el suyo, un usuario con tres pestanas consumiria nueve
  * de las 500 conexiones que admite cada instancia de alerts-api.
  */
-import { createContext, useContext, useMemo, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Activity, AlertTriangle, BarChart3, Ban, ChevronLeft, ChevronRight, ClipboardCheck,
-  FileText, LayoutDashboard, MessageSquareText, Settings, Users,
+  FileText, LayoutDashboard, Menu, MessageSquareText, Settings, Users,
 } from 'lucide-react';
 import { brand } from '../config/brand.js';
 import { useCampaign } from '../hooks/useCampaign.js';
@@ -39,8 +39,10 @@ const NAV = [
 
 export function Layout() {
   const { campaign, code, inBlackout } = useCampaign();
-  const { isCompact } = useResponsive();
+  const { isMobile, isCompact } = useResponsive();
   const [collapsed, setCollapsed] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
 
   const live = useAlertStream({ campaignCode: code });
   const liveValue = useMemo(() => live, [live]);
@@ -49,12 +51,52 @@ export function Layout() {
   // Reaparecen solas al cargar contendientes, temas o reglas de alerta.
   const modulos = useAvailableModules(code);
 
-  const railCollapsed = collapsed || isCompact;
+  // En movil el rail es un cajon que se desliza sobre el contenido, no una
+  // franja apilada arriba: con nueve secciones la franja horizontal obligaba a
+  // desplazarla de lado y empujaba el tablero media pantalla hacia abajo.
+  //
+  // Al navegar se cierra solo. Sin esto el cajon se queda abierto tapando la
+  // pagina que se acaba de abrir, que es el fallo clasico de este patron.
+  useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    if (!drawerOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setDrawerOpen(false); };
+    document.addEventListener('keydown', onKey);
+    // Bloquea el desplazamiento del fondo mientras el cajon esta abierto.
+    const previo = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previo;
+    };
+  }, [drawerOpen]);
+
+  // En movil el rail se muestra SIEMPRE expandido dentro del cajon: alli hay
+  // ancho de sobra y una tira de iconos sin etiqueta no ayuda a nadie.
+  const railCollapsed = isMobile ? false : (collapsed || isCompact);
 
   return (
     <LiveAlertsContext.Provider value={liveValue}>
-      <div className={`cp-shell ${railCollapsed ? 'cp-shell-collapsed' : ''}`}>
-        <aside className="cp-rail" aria-label="Navegacion principal">
+      <div className={`cp-shell ${railCollapsed ? 'cp-shell-collapsed' : ''} ${drawerOpen ? 'cp-shell-drawer-open' : ''}`}>
+        {/* Fondo oscurecido: cierra el cajon al tocar fuera. aria-hidden
+            porque la tecla Escape ya cubre el caso accesible. */}
+        <div
+          className="cp-drawer-scrim"
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden="true"
+        />
+
+        {/* Nada de aria-hidden en el cajon cerrado: dentro hay enlaces
+            enfocables y marcarlo asi deja elementos alcanzables con el
+            tabulador dentro de un contenedor oculto, que es justo lo que la
+            regla prohibe. El cierre se hace con `visibility: hidden` en el
+            CSS, que si los saca del orden de tabulacion y del arbol de
+            accesibilidad. */}
+        <aside
+          className={`cp-rail ${drawerOpen ? 'is-open' : ''}`}
+          aria-label="Navegacion principal"
+        >
           <div className={`cp-rail-perfil ${railCollapsed ? 'is-compact' : ''}`}>
             {/* La foto se sirve desde public/ y NO se importa: asi se puede
                 reemplazar en el contenedor sin recompilar el bundle.
@@ -95,15 +137,20 @@ export function Layout() {
             })}
           </nav>
 
+          {/* Contraer solo tiene sentido en escritorio: en movil el rail vive
+              en un cajon y en tableta ya viene contraido de serie.
+              Es un boton redondo de icono, sin etiqueta: la palabra
+              «Contraer» a media altura del rail competia con la navegacion
+              por atencion sin aportar nada. */}
           {!isCompact && (
             <button
               type="button"
-              className="cp-rail-toggle btn btn-ghost btn-sm"
+              className="cp-rail-toggle"
               onClick={() => setCollapsed((v) => !v)}
               aria-label={collapsed ? 'Expandir navegacion' : 'Contraer navegacion'}
+              title={collapsed ? 'Expandir' : 'Contraer'}
             >
-              {collapsed ? <ChevronRight size={15} aria-hidden="true" /> : <ChevronLeft size={15} aria-hidden="true" />}
-              {!collapsed && <span>Contraer</span>}
+              {collapsed ? <ChevronRight size={16} aria-hidden="true" /> : <ChevronLeft size={16} aria-hidden="true" />}
             </button>
           )}
 
@@ -130,6 +177,25 @@ export function Layout() {
 
         <div className="cp-main">
           <header className="cp-header">
+            {isMobile && (
+              <>
+                <button
+                  type="button"
+                  className="cp-burger"
+                  onClick={() => setDrawerOpen(true)}
+                  aria-label="Abrir navegacion"
+                  aria-expanded={drawerOpen}
+                >
+                  <Menu size={20} aria-hidden="true" />
+                </button>
+                {/* En movil la cabecera es lo unico visible del armazon: sin
+                    el nombre aqui, el tablero no dice de que campana habla
+                    hasta que se abre el cajon. */}
+                <span className="cp-header-titulo">
+                  {campaign?.name || brand.productName}
+                </span>
+              </>
+            )}
             <div className="spacer" />
             <UserMenu />
           </header>
