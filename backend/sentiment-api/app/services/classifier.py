@@ -651,7 +651,7 @@ class ClassifierService:
             JOIN   civic.campaigns cm ON cm.id = c.campaign_id
             JOIN   civic.sources    s ON s.id = c.source_id
             JOIN   civic_cat.source_types st ON st.code = s.type_code
-            WHERE  c.id = :content_id::uuid AND c.published_at = :published_at
+            WHERE  c.id = CAST(:content_id AS uuid) AND c.published_at = :published_at
             """,
             {"content_id": str(content_id), "published_at": published_at},
         )
@@ -775,17 +775,17 @@ class ClassifierService:
                 overall_confidence, needs_review, review_status, raw_output,
                 latency_ms, input_tokens, output_tokens, cost_usd
             ) VALUES (
-                :organization_id::uuid, :campaign_id::uuid, :source_id::uuid,
-                :content_id::uuid, :published_at, :model_id::uuid,
-                :prompt_version_id::uuid, :model_name, 'llm',
-                :sentiment_code::civic.slug_code, :sentiment_score,
-                :sentiment_confidence, :sentiment_probs::jsonb,
-                :intent_code::civic.slug_code, :intent_confidence,
+                CAST(:organization_id AS uuid), CAST(:campaign_id AS uuid), CAST(:source_id AS uuid),
+                CAST(:content_id AS uuid), :published_at, CAST(:model_id AS uuid),
+                CAST(:prompt_version_id AS uuid), :model_name, 'llm',
+                CAST(:sentiment_code AS civic.slug_code), :sentiment_score,
+                :sentiment_confidence, CAST(:sentiment_probs AS jsonb),
+                CAST(:intent_code AS civic.slug_code), :intent_confidence,
                 :toxicity_score, :sarcasm_score, :subjectivity_score,
-                :detected_language::civic.lang_code, :summary,
+                CAST(:detected_language AS civic.lang_code), :summary,
                 :overall_confidence, :needs_review,
                 CASE WHEN :needs_review THEN 'pending' ELSE 'not_required' END,
-                :raw_output::jsonb, :latency_ms, :input_tokens, :output_tokens,
+                CAST(:raw_output AS jsonb), :latency_ms, :input_tokens, :output_tokens,
                 :cost_usd
             )
             RETURNING id, analyzed_at
@@ -842,7 +842,7 @@ class ClassifierService:
                         emotion_code, score, is_dominant
                     ) VALUES (
                         :inference_id, :analyzed_at, :campaign_id, :published_at,
-                        :emotion_code::civic.slug_code, :score, :is_dominant
+                        CAST(:emotion_code AS civic.slug_code), :score, :is_dominant
                     )
                     ON CONFLICT DO NOTHING
                     """
@@ -863,7 +863,7 @@ class ClassifierService:
                         match_method, evidence_span
                     ) VALUES (
                         :inference_id, :analyzed_at, :campaign_id, :published_at,
-                        :contender_id::uuid, :stance_code::civic.slug_code,
+                        CAST(:contender_id AS uuid), CAST(:stance_code AS civic.slug_code),
                         :stance_score, :confidence, :match_method, :evidence_span
                     )
                     ON CONFLICT DO NOTHING
@@ -892,7 +892,7 @@ class ClassifierService:
                         category_code, relevance, topic_sentiment, is_primary
                     ) VALUES (
                         :inference_id, :analyzed_at, :campaign_id, :published_at,
-                        :category_code::civic.slug_code, :relevance,
+                        CAST(:category_code AS civic.slug_code), :relevance,
                         :topic_sentiment, :is_primary
                     )
                     ON CONFLICT DO NOTHING
@@ -921,7 +921,7 @@ class ClassifierService:
                     ) VALUES (
                         :inference_id, :analyzed_at, :campaign_id, :published_at,
                         :entity_type_code, :entity_text, :entity_norm,
-                        :contender_id::uuid, :entity_sentiment, :confidence,
+                        CAST(:contender_id AS uuid), :entity_sentiment, :confidence,
                         :mention_count
                     )
                     """
@@ -950,8 +950,8 @@ class ClassifierService:
                         flag_code, score, target_contender_id
                     ) VALUES (
                         :inference_id, :analyzed_at, :campaign_id, :published_at,
-                        :flag_code::civic.slug_code, :score,
-                        :target_contender_id::uuid
+                        CAST(:flag_code AS civic.slug_code), :score,
+                        CAST(:target_contender_id AS uuid)
                     )
                     ON CONFLICT DO NOTHING
                     """
@@ -980,7 +980,7 @@ async def _load_contenders(session: AsyncSession, campaign_id: UUID) -> dict[str
         """
         SELECT id, name, short_name, aliases
         FROM   civic.contenders
-        WHERE  campaign_id = :campaign_id::uuid AND status = 'active'
+        WHERE  campaign_id = CAST(:campaign_id AS uuid) AND status = 'active'
         """,
         {"campaign_id": str(campaign_id)},
     )

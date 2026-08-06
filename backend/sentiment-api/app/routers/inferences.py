@@ -262,14 +262,14 @@ async def annotate_inference(
         ) VALUES (
             :organization_id, :campaign_id, :content_id, :content_published_at,
             :annotator_sub,
-            :sentiment_code::civic.slug_code,
-            :stance_code::civic.slug_code,
-            :stance_target_id::uuid,
-            :intent_code::civic.slug_code,
-            :emotion_codes::civic.slug_code[],
-            :topic_codes::civic.slug_code[],
-            :risk_flag_codes::civic.slug_code[],
-            :annotator_confidence::civic.unit_score,
+            CAST(:sentiment_code AS civic.slug_code),
+            CAST(:stance_code AS civic.slug_code),
+            CAST(:stance_target_id AS uuid),
+            CAST(:intent_code AS civic.slug_code),
+            CAST(:emotion_codes AS civic.slug_code[]),
+            CAST(:topic_codes AS civic.slug_code[]),
+            CAST(:risk_flag_codes AS civic.slug_code[]),
+            CAST(:annotator_confidence AS civic.unit_score),
             :is_gold, :notes
         )
         ON CONFLICT (content_id, annotator_sub, stance_target_id) DO UPDATE SET

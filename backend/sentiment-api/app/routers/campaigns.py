@@ -99,7 +99,7 @@ async def get_overview(
                avg_toxicity, avg_confidence, open_alerts, critical_alerts,
                review_backlog, sources_healthy, sources_total, is_reliable,
                last_updated
-        FROM   civic_kpi.campaign_overview(:code::civic.public_code, :days)
+        FROM   civic_kpi.campaign_overview(CAST(:code AS civic.public_code), :days)
         """,
         {"code": code, "days": days},
     )
@@ -128,7 +128,7 @@ async def get_timeseries(
                net_sentiment, avg_score, rolling_avg_7, volume_zscore,
                is_spike, is_reliable
         FROM   civic_kpi.sentiment_timeseries(
-                   :code::civic.public_code, :days, :granularity, :source_id::uuid)
+                   CAST(:code AS civic.public_code), :days, :granularity, CAST(:source_id AS uuid))
         ORDER  BY period
         """,
         {
@@ -160,7 +160,7 @@ async def get_contenders(
                support_wilson_lb, avg_stance_score, avg_text_sentiment,
                prev_net_support, competitive_momentum, baseline_support_pct,
                model_attribution_ratio, is_reliable, rank_by_wilson
-        FROM   civic_kpi.contender_scoreboard(:code::civic.public_code, :days)
+        FROM   civic_kpi.contender_scoreboard(CAST(:code AS civic.public_code), :days)
         ORDER  BY rank_by_wilson NULLS LAST
         """,
         {"code": code, "days": days},
@@ -185,7 +185,7 @@ async def get_topics(
         SELECT category_code, label_es, dimension, mentions, topic_share,
                avg_sentiment, negative_pct, unique_authors, prev_mentions,
                topic_growth, is_emerging, is_owned_issue, is_reliable
-        FROM   civic_kpi.topic_agenda(:code::civic.public_code, :days, :limit)
+        FROM   civic_kpi.topic_agenda(CAST(:code AS civic.public_code), :days, :limit)
         """,
         {"code": code, "days": days, "limit": limit},
     )
@@ -208,7 +208,7 @@ async def get_crisis(
         SELECT risk_index, risk_level, volume_component, sentiment_component,
                toxicity_component, flags_component, sample_size, is_reliable,
                explanation
-        FROM   civic_kpi.crisis_risk(:code::civic.public_code, :hours)
+        FROM   civic_kpi.crisis_risk(CAST(:code AS civic.public_code), :hours)
         """,
         {"code": code, "hours": hours},
     )
@@ -234,7 +234,7 @@ async def get_coordination(
         SELECT fingerprint_hex, sample_text, copies, distinct_authors,
                first_seen, last_seen, spread_minutes, sources, burst_rate
         FROM   civic_kpi.coordination_signals(
-                   :code::civic.public_code, :hours, :min_authors)
+                   CAST(:code AS civic.public_code), :hours, :min_authors)
         """,
         {"code": code, "hours": hours, "min_authors": min_authors},
     )

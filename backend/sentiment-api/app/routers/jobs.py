@@ -98,10 +98,10 @@ async def create_job(ctx: Ctx, code: CampaignCode, body: JobCreate) -> Job:
             prompt_version_id, job_type, priority, status_code, scheduled_at,
             max_attempts, config, created_by
         ) VALUES (
-            :organization_id, :campaign_id, :campaign_code, :source_id::uuid,
-            :model_id::uuid, :prompt_version_id::uuid, :job_type, :priority,
+            :organization_id, :campaign_id, :campaign_code, CAST(:source_id AS uuid),
+            CAST(:model_id AS uuid), CAST(:prompt_version_id AS uuid), :job_type, :priority,
             'queued', COALESCE(:scheduled_at, NOW()), :max_attempts,
-            :config::jsonb, :created_by
+            CAST(:config AS jsonb), :created_by
         )
         RETURNING id
         """,
@@ -131,7 +131,7 @@ async def create_job(ctx: Ctx, code: CampaignCode, body: JobCreate) -> Job:
 
 # Fragmentos SET admitidos. El progreso no está: lo reporta el worker.
 _JOB_PATCH_FIELDS: dict[str, str] = {
-    "status_code": "status_code = :status_code::civic.slug_code",
+    "status_code": "status_code = CAST(:status_code AS civic.slug_code)",
     "priority": "priority = :priority",
     "scheduled_at": "scheduled_at = :scheduled_at",
     "error_message": "error_message = :error_message",

@@ -24,7 +24,7 @@ from app.core.auth import AuthenticatedUser, get_current_user
 from app.core.database import get_db
 
 _SET_CONTEXT = text(
-    "SELECT civic_ops.set_session_context(:org_id::uuid, :sub, :username)"
+    "SELECT civic_ops.set_session_context(CAST(:org_id AS uuid), :sub, :username)"
 )
 
 

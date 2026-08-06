@@ -102,7 +102,7 @@ async def list_datasets(
         clauses.append("split = :split")
         params["split"] = split
     if campaign_id:
-        clauses.append("campaign_id = :campaign_id::uuid")
+        clauses.append("campaign_id = CAST(:campaign_id AS uuid)")
         params["campaign_id"] = str(campaign_id)
     if clauses:
         sql += " WHERE " + " AND ".join(clauses)
@@ -129,9 +129,9 @@ async def create_dataset(ctx: Ctx, body: EvalDatasetCreate) -> EvalDataset:
             random_seed, annotators_per_item, inter_annotator_agreement,
             version, created_by
         ) VALUES (
-            :organization_id, :campaign_id::uuid, :code::civic.slug_code, :name,
-            :description, :split, :task_codes::civic.slug_code[],
-            :languages::civic.lang_code[], :sampling_method, :sampling_notes,
+            :organization_id, CAST(:campaign_id AS uuid), CAST(:code AS civic.slug_code), :name,
+            :description, :split, CAST(:task_codes AS civic.slug_code[]),
+            CAST(:languages AS civic.lang_code[]), :sampling_method, :sampling_notes,
             :random_seed, :annotators_per_item, :inter_annotator_agreement,
             :version, :created_by
         )
@@ -244,14 +244,14 @@ async def bulk_add_items(ctx: Ctx, dataset_id: UUID, body: EvalItemsBulk) -> Bul
                 gold_risk_flags, gold_entities, difficulty, phenomena,
                 is_contested, annotator_notes
             ) VALUES (
-                :dataset_id::uuid, :content_id::uuid, :content_published_at,
-                :text, :language_code::civic.lang_code,
-                :source_type::civic.slug_code,
-                :gold_sentiment::civic.slug_code, :gold_stance::civic.slug_code,
-                :gold_stance_target::uuid, :gold_intent::civic.slug_code,
-                :gold_emotions::civic.slug_code[], :gold_topics::civic.slug_code[],
-                :gold_risk_flags::civic.slug_code[], :gold_entities::jsonb,
-                :difficulty, :phenomena::text[], :is_contested, :annotator_notes
+                CAST(:dataset_id AS uuid), CAST(:content_id AS uuid), :content_published_at,
+                :text, CAST(:language_code AS civic.lang_code),
+                CAST(:source_type AS civic.slug_code),
+                CAST(:gold_sentiment AS civic.slug_code), CAST(:gold_stance AS civic.slug_code),
+                CAST(:gold_stance_target AS uuid), CAST(:gold_intent AS civic.slug_code),
+                CAST(:gold_emotions AS civic.slug_code[]), CAST(:gold_topics AS civic.slug_code[]),
+                CAST(:gold_risk_flags AS civic.slug_code[]), CAST(:gold_entities AS jsonb),
+                :difficulty, CAST(:phenomena AS text[]), :is_contested, :annotator_notes
             )
             """
         ),
@@ -282,10 +282,10 @@ async def list_runs(
     params: dict[str, Any] = {"limit": limit}
 
     if dataset_id:
-        clauses.append("r.dataset_id = :dataset_id::uuid")
+        clauses.append("r.dataset_id = CAST(:dataset_id AS uuid)")
         params["dataset_id"] = str(dataset_id)
     if model_id:
-        clauses.append("r.model_id = :model_id::uuid")
+        clauses.append("r.model_id = CAST(:model_id AS uuid)")
         params["model_id"] = str(model_id)
 
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
@@ -321,10 +321,10 @@ async def create_run(ctx: Ctx, body: EvalRunCreate) -> EvalRun:
             baseline_run_id, status_code, tasks_evaluated, items_total,
             config, notes, created_by
         ) VALUES (
-            :organization_id, :dataset_id::uuid, :model_id::uuid,
-            :prompt_version_id::uuid, :name, :baseline_run_id::uuid,
-            'queued', :tasks::civic.slug_code[], :items_total,
-            :config::jsonb, :notes, :created_by
+            :organization_id, CAST(:dataset_id AS uuid), CAST(:model_id AS uuid),
+            CAST(:prompt_version_id AS uuid), :name, CAST(:baseline_run_id AS uuid),
+            'queued', CAST(:tasks AS civic.slug_code[]), :items_total,
+            CAST(:config AS jsonb), :notes, :created_by
         )
         RETURNING id
         """,
@@ -372,7 +372,7 @@ async def compute_metrics(ctx: Ctx, run_id: UUID) -> list[ComputeMetricsResult]:
         ctx.session,
         """
         SELECT task, slice, metric, value
-        FROM   civic_kpi.compute_eval_metrics(:run_id::uuid)
+        FROM   civic_kpi.compute_eval_metrics(CAST(:run_id AS uuid))
         """,
         {"run_id": str(run_id)},
     )
@@ -392,13 +392,13 @@ async def get_metrics(
 ) -> list[EvalMetric]:
     await _assert_run_visible(ctx.session, run_id)
 
-    clauses = ["run_id = :run_id::uuid"]
+    clauses = ["run_id = CAST(:run_id AS uuid)"]
     params: dict[str, Any] = {"run_id": str(run_id)}
     if slice_filter:
         clauses.append("slice = :slice")
         params["slice"] = slice_filter
     if task:
-        clauses.append("task_code = :task::civic.slug_code")
+        clauses.append("task_code = CAST(:task AS civic.slug_code)")
         params["task"] = task
 
     rows = await fetch_all(
@@ -433,8 +433,8 @@ async def get_confusion(
         """
         SELECT task_code, slice, gold_class, pred_class, count
         FROM   civic.eval_confusion
-        WHERE  run_id = :run_id::uuid
-          AND  task_code = :task::civic.slug_code
+        WHERE  run_id = CAST(:run_id AS uuid)
+          AND  task_code = CAST(:task AS civic.slug_code)
           AND  slice = :slice
         ORDER  BY gold_class, pred_class
         """,
@@ -465,7 +465,7 @@ async def compare_runs(
         ctx.session,
         """
         SELECT task, slice, metric, baseline, candidate, delta, delta_pct, verdict
-        FROM   civic_kpi.compare_eval_runs(:run_id::uuid, :baseline_id::uuid)
+        FROM   civic_kpi.compare_eval_runs(CAST(:run_id AS uuid), CAST(:baseline_id AS uuid))
         """,
         {"run_id": str(run_id), "baseline_id": str(baseline)},
     )
@@ -492,7 +492,7 @@ async def promotion_gate(
         """
         SELECT passed, reason
         FROM   civic_kpi.evaluate_promotion_gate(
-                   :run_id::uuid, :min_f1, :min_schema, :max_calib, :max_drop)
+                   CAST(:run_id AS uuid), :min_f1, :min_schema, :max_calib, :max_drop)
         """,
         {
             "run_id": str(run_id),
@@ -546,7 +546,7 @@ async def get_errors(
                emotions_jaccard, topics_jaccard, confidence, schema_valid,
                latency_ms, error_message
         FROM   civic_kpi.v_eval_prediction_detail
-        WHERE  run_id = :run_id::uuid
+        WHERE  run_id = CAST(:run_id AS uuid)
           AND  {condition}
         ORDER  BY is_contested, confidence DESC NULLS LAST
         LIMIT  :limit

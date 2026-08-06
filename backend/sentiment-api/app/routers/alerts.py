@@ -210,13 +210,13 @@ async def create_rule(ctx: Ctx, code: CampaignCode, body: AlertRuleCreate) -> Al
             recipients, message_template, is_enabled, created_by
         ) VALUES (
             :organization_id, :campaign_id, :campaign_code, :name,
-            :alert_type_code::civic.slug_code, :severity_code::civic.slug_code,
+            CAST(:alert_type_code AS civic.slug_code), CAST(:severity_code AS civic.slug_code),
             :metric, :operator, :threshold, :window_minutes, :min_sample_size,
-            :contender_id::uuid, :source_id::uuid,
-            :topic_category::civic.slug_code, :geo_area_id::uuid,
+            CAST(:contender_id AS uuid), CAST(:source_id AS uuid),
+            CAST(:topic_category AS civic.slug_code), CAST(:geo_area_id AS uuid),
             :cooldown_minutes, :consecutive_hits, :max_per_day,
             :respect_blackout, :quiet_hours_start, :quiet_hours_end,
-            :channels::text[], :recipients::jsonb, :message_template,
+            CAST(:channels AS text[]), CAST(:recipients AS jsonb), :message_template,
             :is_enabled, :created_by
         )
         RETURNING {_RULE_COLUMNS}
@@ -257,7 +257,7 @@ async def create_rule(ctx: Ctx, code: CampaignCode, body: AlertRuleCreate) -> Al
 # SQL; los valores del cuerpo siempre viajan como parámetros.
 _RULE_PATCH_FIELDS: dict[str, str] = {
     "name": "name = :name",
-    "severity_code": "severity_code = :severity_code::civic.slug_code",
+    "severity_code": "severity_code = CAST(:severity_code AS civic.slug_code)",
     "metric": "metric = :metric",
     "operator": "operator = :operator",
     "threshold": "threshold = :threshold",
@@ -269,8 +269,8 @@ _RULE_PATCH_FIELDS: dict[str, str] = {
     "respect_blackout": "respect_blackout = :respect_blackout",
     "quiet_hours_start": "quiet_hours_start = :quiet_hours_start",
     "quiet_hours_end": "quiet_hours_end = :quiet_hours_end",
-    "channels": "channels = :channels::text[]",
-    "recipients": "recipients = :recipients::jsonb",
+    "channels": "channels = CAST(:channels AS text[])",
+    "recipients": "recipients = CAST(:recipients AS jsonb)",
     "message_template": "message_template = :message_template",
     "is_enabled": "is_enabled = :is_enabled",
 }
@@ -377,7 +377,7 @@ async def evaluate_rules(
         """
         SELECT rule_id, rule_name, metric, observed, threshold, sample_size,
                condition_met, fired, skip_reason, alert_id
-        FROM   civic.evaluate_alert_rules(:code::civic.public_code, :dry_run)
+        FROM   civic.evaluate_alert_rules(CAST(:code AS civic.public_code), :dry_run)
         """,
         {"code": code, "dry_run": dry_run},
     )

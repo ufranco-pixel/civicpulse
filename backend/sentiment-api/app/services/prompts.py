@@ -140,8 +140,8 @@ JOIN      civic.model_providers   pr  ON pr.id = m.provider_id
 LEFT JOIN civic.ai_models         fm  ON fm.id = p.fallback_model_id
 LEFT JOIN civic.model_providers   fpr ON fpr.id = fm.provider_id
 LEFT JOIN civic.prompt_versions   pv  ON pv.id = p.prompt_version_id
-WHERE     p.campaign_id = :campaign_id::uuid
-  AND     p.task_code   = :task_code::civic.slug_code
+WHERE     p.campaign_id = CAST(:campaign_id AS uuid)
+  AND     p.task_code   = CAST(:task_code AS civic.slug_code)
   AND     p.is_enabled
 """
 
@@ -156,7 +156,7 @@ JOIN   civic.prompt_templates t ON t.id = pv.template_id
 WHERE  pv.status = 'active'
   AND  t.is_active
   AND  t.purpose = 'classification'
-  AND  :task_code::civic.slug_code = ANY (t.task_codes)
+  AND  CAST(:task_code AS civic.slug_code) = ANY (t.task_codes)
 ORDER  BY (t.organization_id IS NULL)
 LIMIT  1
 """

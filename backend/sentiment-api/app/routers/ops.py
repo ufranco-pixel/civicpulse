@@ -104,7 +104,7 @@ async def compliance(ctx: Ctx) -> list[ComplianceStatus]:
                subscriptions_without_consent, risk_flags_pending_review,
                active_providers_without_no_training_clause
         FROM   civic_ops.v_compliance_status
-        WHERE  organization_id = :org_id::uuid
+        WHERE  organization_id = CAST(:org_id AS uuid)
         """,
         {"org_id": str(ctx.user.organization_id)},
     )

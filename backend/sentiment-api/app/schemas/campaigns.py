@@ -194,7 +194,11 @@ class EmotionAggregate(ApiModel):
     """Agregado de `civic_kpi.mv_emotion_daily`."""
 
     emotion_code: str
-    valence: str | None = None
+    # Los dos NO son del mismo tipo, aunque el nombre invite a pensarlo:
+    # valence es smallint (-1/0/1) y arousal es texto ('low'/'high'). Con
+    # `str` en valence, /emotions devolvía 500 con «Input should be a valid
+    # string, input_value=-1».
+    valence: int | None = None
     arousal: str | None = None
     occurrences: int
     dominant_count: int
