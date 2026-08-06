@@ -6,18 +6,26 @@
 
 :root {
   /* ── Marca: azul civico ─────────────────────────────────────────────── */
-  --c-brand-50:  #eff5ff;
-  --c-brand-100: #dbe8fe;
-  --c-brand-200: #bfd7fe;
-  --c-brand-300: #93bbfd;
-  --c-brand-400: #6094fa;
-  --c-brand-500: #3b76f6;
-  --c-brand-600: #2563eb;
-  --c-brand-700: #1d4ed8;
-  --c-brand-800: #1e40af;
-  --c-brand-900: #1e3a8a;
-  --c-brand:     var(--c-brand-700);
-  --c-brand-contrast: #ffffff;
+  /* Escala de marca en el naranja de oeste, #F4981B, construida alrededor de
+     hsl(35, 91%, 53%). Antes era azul; se sustituye la escala entera y no solo
+     --c-brand porque los tonos 50–200 se usan como fondos de selección y de
+     estado activo, y dejarlos azules produce un naranja con halos azules. */
+  --c-brand-50:  #fff6eb;
+  --c-brand-100: #feeacd;
+  --c-brand-200: #fcd49c;
+  --c-brand-300: #fabe6b;
+  --c-brand-400: #f6ad46;
+  --c-brand-500: #f4991a;   /* el tono pedido */
+  --c-brand-600: #dc8109;
+  --c-brand-700: #b76706;
+  --c-brand-800: #935106;
+  --c-brand-900: #733d07;
+  --c-brand:     var(--c-brand-500);
+  /* Texto OSCURO sobre la marca, no blanco.
+     Blanco sobre #F4981B da 2.25:1 y es ilegible; este tono da 8.3:1. Con el
+     azul anterior el blanco funcionaba, pero un naranja claro no admite el
+     mismo tratamiento y los botones primarios quedarían borrosos. */
+  --c-brand-contrast: #1a1205;
 
   /* ── Acento: ambar ──────────────────────────────────────────────────── */
   --c-accent-50:  #fffbeb;
@@ -171,8 +179,10 @@
   --c-border:        #26314c;
   --c-border-strong: #3a4767;
 
+  /* En oscuro se usa el 400: sobre fondo negro el 500 pierde presencia y el
+     600 se apaga del todo. El texto sigue siendo oscuro (9.7:1). */
   --c-brand:          var(--c-brand-400);
-  --c-brand-contrast: #0b1020;
+  --c-brand-contrast: #1a1205;
   --c-accent:         var(--c-accent-400);
 
   --c-success: #4ade80;  --c-success-bg: #08301c;

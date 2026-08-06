@@ -170,11 +170,27 @@ function start() {
   }
   if (timer) return;
   estado.running = true;
+
+  const proveedor = process.env.WA_OVERRIDE_PROVIDER || process.env.WA_PROVIDER || 'mock';
   logger.info('despachador de WhatsApp en marcha', {
     intervalo_ms: CFG.intervalMs,
     lote: CFG.batchSize,
-    proveedor: process.env.WA_OVERRIDE_PROVIDER || process.env.WA_PROVIDER || 'mock',
+    proveedor,
   });
+
+  // Aviso a nivel warn, no info: con `mock` las entregas pasan a 'sent' con un
+  // provider_ref que empieza por «mock-», así que desde la base y desde el
+  // tablero parece que todo salió bien. La única señal es una línea de log
+  // entre otras muchas. Que sea un aviso al arrancar evita descubrirlo cuando
+  // alguien pregunta por qué no le llegó el WhatsApp.
+  if (proveedor === 'mock') {
+    logger.warn(
+      'MODO SIMULADO: no se envía ningún WhatsApp real. Las entregas se marcarán '
+      + 'como enviadas con un identificador falso. Para enviar de verdad ponga '
+      + 'WA_PROVIDER=wwebjs (y deje WA_OVERRIDE_PROVIDER vacío) y reinicie el servicio.',
+      { proveedor, override: process.env.WA_OVERRIDE_PROVIDER || null },
+    );
+  }
   // unref() para que este temporizador no impida que el proceso termine
   // cuando llegue la señal de apagado.
   timer = setInterval(() => { void ciclo(); }, CFG.intervalMs);

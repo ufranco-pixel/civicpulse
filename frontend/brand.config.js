@@ -14,7 +14,7 @@ const brand = {
     'Analisis de sentimiento, postura y agenda sobre comentarios publicos de campanas politicas.',
 
   colors: {
-    primary: '#1d4ed8',
+    primary: '#F4981B',   // naranja de oeste
     accent: '#d97706',
   },
 
