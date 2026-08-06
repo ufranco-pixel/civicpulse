@@ -35,22 +35,56 @@ const RETRY_BASE_MS = Number.parseInt(process.env.WA_RETRY_BASE_MS || '5000', 10
 const RETRY_MAX_MS = Number.parseInt(process.env.WA_RETRY_MAX_MS || '300000', 10);
 
 /**
- * Argumentos de Chromium. Cada uno responde a un fallo concreto en contenedor:
+ * Argumentos de Chromium.
+ *
+ * SIN `--single-process` ni `--no-zygote`, y esto es lo importante.
+ *
+ * Estaban puestos con el razonamiento de que «para una sola pestaña no hace
+ * falta más de un proceso». Es falso para WhatsApp Web: con un único proceso,
+ * el hilo del renderizador comparte destino con el del navegador, y la carga
+ * de sincronizar los chats lo tumba. El síntoma exacto era
+ * «Protocol error (Network.setUserAgentOverride): Session closed» en el
+ * arranque, y —peor— un cliente que autenticaba y luego moría en silencio sin
+ * llegar nunca a 'ready', dejando el canal colgado sin ningún error.
+ *
+ * El resto sí responde a un problema real en contenedor:
  *  --no-sandbox / --disable-setuid-sandbox: sin CAP_SYS_ADMIN no hay sandbox.
  *  --disable-dev-shm-usage: /dev/shm por defecto es de 64 MB y Chromium muere.
- *  --disable-gpu, --no-zygote, --single-process: no hay GPU ni sentido en
- *    mantener varios procesos para una sola pestaña.
+ *  --disable-gpu: no hay GPU.
+ *  Los cuatro de *backgrounding*: sin ventana visible, Chromium considera la
+ *    pestaña oculta y estrangula sus temporizadores; la sesión de WhatsApp
+ *    deja de latir y el servidor la da por caída al cabo de un rato.
  */
 const PUPPETEER_ARGS = [
   '--no-sandbox',
   '--disable-setuid-sandbox',
   '--disable-dev-shm-usage',
   '--disable-gpu',
-  '--no-zygote',
-  '--single-process',
+  '--disable-extensions',
+  '--disable-background-timer-throttling',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-renderer-backgrounding',
+  '--disable-features=IsolateOrigins,site-per-process',
 ];
 
-/** @type {{status: 'disconnected'|'qr_pending'|'connected'|'error', qrCode: string|null, lastError: string|null, connectedAt: string|null}} */
+/**
+ * Margen entre 'authenticated' y 'ready'.
+ *
+ * WhatsApp Web sincroniza los chats entre ambos eventos y eso puede tardar
+ * minutos en una cuenta con historial. Pero si el renderizador muere durante
+ * la sincronización no se emite ningún evento: el cliente se queda a medias
+ * para siempre. Este vigilante convierte ese cuelgue silencioso en un error
+ * visible y un reintento.
+ */
+const READY_TIMEOUT_MS = Number.parseInt(process.env.WA_READY_TIMEOUT_MS || '240000', 10);
+
+/**
+ * `authenticating` es el hueco entre 'authenticated' y 'ready': la sesión es
+ * válida pero WhatsApp aún sincroniza los chats y NO se puede enviar todavía.
+ * Antes no existía y ese rato se veía como el estado anterior, que podía ser
+ * 'error' de un intento fallido previo.
+ * @type {{status: 'disconnected'|'qr_pending'|'authenticating'|'connected'|'error', qrCode: string|null, lastError: string|null, connectedAt: string|null}}
+ */
 const state = {
   status: 'disconnected',
   qrCode: null,
@@ -94,6 +128,31 @@ function isConnected() {
   return state.status === 'connected' && client !== null;
 }
 
+let readyTimer = null;
+
+/** Arranca la cuenta atrás entre 'authenticated' y 'ready'. */
+function armarVigilanteReady(onMessage) {
+  cancelarVigilanteReady();
+  readyTimer = setTimeout(() => {
+    readyTimer = null;
+    if (state.status === 'connected' || stopped) return;
+    setStatus('error', {
+      lastError:
+        `Autenticó pero no llegó a 'ready' en ${Math.round(READY_TIMEOUT_MS / 1000)} s. `
+        + 'Lo habitual es que el navegador muriera durante la sincronización.',
+    });
+    logger.error('WhatsApp autenticó pero nunca quedó listo; se reintenta', {
+      timeout_ms: READY_TIMEOUT_MS,
+    });
+    scheduleRetry(0, onMessage);
+  }, READY_TIMEOUT_MS);
+  if (readyTimer.unref) readyTimer.unref();
+}
+
+function cancelarVigilanteReady() {
+  if (readyTimer) { clearTimeout(readyTimer); readyTimer = null; }
+}
+
 function buildClient(onMessage) {
   const c = new Client({
     // LocalAuth guarda la sesión en disco: sin volumen persistente hay que
@@ -122,11 +181,17 @@ function buildClient(onMessage) {
   });
 
   c.on('authenticated', () => {
-    logger.info('sesión de WhatsApp autenticada');
-    state.lastError = null;
+    // El estado TIENE que cambiar aquí. Antes solo se registraba en el log, y
+    // si un intento anterior había dejado el estado en 'error', ahí se quedaba
+    // aunque el cliente estuviera autenticando correctamente. El despachador
+    // leía «estado: error» y rechazaba los envíos sin más explicación.
+    setStatus('authenticating', { qrCode: null, lastError: null });
+    logger.info('sesión de WhatsApp autenticada; sincronizando chats');
+    armarVigilanteReady(onMessage);
   });
 
   c.on('ready', () => {
+    cancelarVigilanteReady();
     setStatus('connected', {
       qrCode: null,
       lastError: null,
@@ -146,6 +211,7 @@ function buildClient(onMessage) {
   });
 
   c.on('disconnected', (reason) => {
+    cancelarVigilanteReady();
     setStatus('disconnected', { qrCode: null, connectedAt: null, lastError: `Desconectado: ${reason}` });
     logger.warn('WhatsApp desconectado', { reason });
     // Reconexión en segundo plano. El servidor HTTP sigue atendiendo mientras.
@@ -211,6 +277,7 @@ async function initClient(options = {}) {
     await client.initialize();
     return getState();
   } catch (err) {
+    cancelarVigilanteReady();
     setStatus('error', { lastError: String(err && err.message ? err.message : err) });
     logger.error('no se pudo inicializar WhatsApp', { attempt: state.attempts, err });
 
@@ -260,6 +327,7 @@ async function logout() {
 /** Detiene reintentos y cierra el navegador. Para el apagado ordenado. */
 async function destroy() {
   stopped = true;
+  cancelarVigilanteReady();
   if (retryTimer) {
     clearTimeout(retryTimer);
     retryTimer = null;

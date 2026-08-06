@@ -65,7 +65,16 @@ const wwebjsAdapter = {
       // Reintentable: la sesión suele volver sola tras una reconexión, y
       // marcar 'failed' aquí perdería alertas por una caída pasajera.
       const estado = bot.getState?.().status || 'desconocido';
-      throw new WhatsAppSendError(`WhatsApp no conectado (estado: ${estado})`, true);
+      const explicacion = {
+        authenticating: 'la sesión es válida pero WhatsApp aún sincroniza los chats',
+        qr_pending: 'falta escanear el QR',
+        disconnected: 'la sesión se cerró',
+        error: 'el cliente falló al arrancar; revise el log del bot',
+      }[estado];
+      throw new WhatsAppSendError(
+        `WhatsApp no conectado (estado: ${estado})${explicacion ? ` — ${explicacion}` : ''}`,
+        true,
+      );
     }
 
     try {
