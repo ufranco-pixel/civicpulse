@@ -9,7 +9,7 @@ import { createContext, useContext, useMemo, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Activity, AlertTriangle, BarChart3, Ban, ChevronLeft, ChevronRight, ClipboardCheck,
-  FileText, Gauge, LayoutDashboard, ListChecks, MessageSquareText, Radio, Settings,
+  FileText, Gauge, LayoutDashboard, MessageSquareText, Radio, Settings,
   Users, WifiOff,
 } from 'lucide-react';
 import { brand } from '../config/brand.js';
@@ -34,7 +34,6 @@ const NAV = [
   { to: '/contenidos',    label: 'Contenidos',    icon: MessageSquareText,  module: 'content' },
   { to: '/alertas',       label: 'Alertas',       icon: AlertTriangle,      module: 'alerts', badge: true },
   { to: '/revision',      label: 'Revision',      icon: ClipboardCheck,     module: 'review' },
-  { to: '/evaluacion',    label: 'Evaluacion',    icon: ListChecks,         module: 'evaluation' },
   { to: '/informes',      label: 'Informes',      icon: FileText,           module: 'reports' },
   { to: '/ajustes',       label: 'Ajustes',       icon: Settings,           module: 'settings' },
 ];

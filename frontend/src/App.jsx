@@ -24,7 +24,6 @@ import AgendaPage from './pages/AgendaPage.jsx';
 import ContentPage from './pages/ContentPage.jsx';
 import AlertsPage from './pages/AlertsPage.jsx';
 import ReviewPage from './pages/ReviewPage.jsx';
-import EvaluationPage from './pages/EvaluationPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -66,14 +65,6 @@ export function App() {
                   element={(
                     <PrivateRoute requiredRoles={WRITE_ROLES}>
                       <ReviewPage />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/evaluacion"
-                  element={(
-                    <PrivateRoute requiredRoles={WRITE_ROLES}>
-                      <EvaluationPage />
                     </PrivateRoute>
                   )}
                 />
