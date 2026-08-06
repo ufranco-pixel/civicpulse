@@ -295,8 +295,10 @@ services:
     build: { context: ./backend/whatsapp-bot }
     image: oeste-sentimientos/whatsapp-bot:${IMAGE_TAG:-1.0.0}
     container_name: oeste-sentimientos-whatsapp-bot
-    profiles: ["whatsapp", "full"]
-    networks: [civicnet]
+    # Ya NO va tras un perfil. El bot es ahora quien despacha las alertas por
+    # WhatsApp, así que con `profiles` el circuito quedaba silenciosamente
+    # muerto: las entregas se creaban en 'pending' y nadie las enviaba.
+    networks: [civicnet, traefik]
     depends_on:
       db-preflight:
         condition: service_completed_successfully
@@ -307,16 +309,46 @@ services:
       LOG_LEVEL:                ${LOG_LEVEL:-info}
       CORS_ORIGINS:             https://${APP_DOMAIN}
       WA_SESSION_PATH:          /app/wa-session
+      WA_CLIENT_ID:             ${WA_CLIENT_ID:-oeste-sentimientos}
       WA_AUTOSTART:             ${WA_AUTOSTART:-true}
+      WA_PRINT_QR_TERMINAL:     ${WA_PRINT_QR_TERMINAL:-true}
       WA_ORGANIZATION_ID:       ${WA_ORGANIZATION_ID:-}
       WA_DEFAULT_CAMPAIGN_CODE: ${WA_DEFAULT_CAMPAIGN_CODE:-}
+      # ── Despachador de entregas ──
+      WA_PROVIDER:              ${WA_PROVIDER:-mock}
+      WA_OVERRIDE_PROVIDER:     ${WA_OVERRIDE_PROVIDER:-}
+      WA_DISPATCH_ENABLED:      ${WA_DISPATCH_ENABLED:-true}
+      WA_DISPATCH_INTERVAL_MS:  ${WA_DISPATCH_INTERVAL_MS:-10000}
+      WA_DISPATCH_BATCH:        ${WA_DISPATCH_BATCH:-10}
+      WA_MAX_ATTEMPTS:          ${WA_MAX_ATTEMPTS:-5}
+      WA_RETRY_BASE_MINUTES:    ${WA_RETRY_BASE_MINUTES:-1}
+      WA_STUCK_MINUTES:         ${WA_STUCK_MINUTES:-5}
+      WA_SEND_TIMEOUT_MS:       ${WA_SEND_TIMEOUT_MS:-30000}
+      META_PHONE_NUMBER_ID:     ${META_PHONE_NUMBER_ID:-}
+      META_ACCESS_TOKEN:        ${META_ACCESS_TOKEN:-}
+      META_API_VERSION:         ${META_API_VERSION:-v18.0}
+      TWILIO_ACCOUNT_SID:       ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN:        ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM:              ${TWILIO_FROM:-}
     volumes:
+      # Sin este volumen hay que escanear el QR en cada despliegue.
       - wasession:/app/wa-session
     shm_size: "512mb"
     security_opt:
       - seccomp:unconfined
+    # Se expone SOLO bajo /api/whatsapp/, que es lo que necesita el tablero
+    # para leer el estado y el QR. Prioridad por encima del frontend y por
+    # debajo de la API principal.
     labels:
-      traefik.enable: "false"
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK:-web-network}
+      traefik.http.routers.wabot.rule: "Host(`${APP_DOMAIN}`) && PathPrefix(`/api/whatsapp`)"
+      traefik.http.routers.wabot.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.wabot.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-myresolver}
+      traefik.http.routers.wabot.priority: "110"
+      traefik.http.routers.wabot.middlewares: wabot-strip
+      traefik.http.middlewares.wabot-strip.stripprefix.prefixes: /api/whatsapp
+      traefik.http.services.wabot.loadbalancer.server.port: "8001"
 
   # ───────────────────────────────────────────────────────────────────────────
   # Frontend · https://DOMINIO/
@@ -333,7 +365,9 @@ services:
         VITE_SENTIMENT_API_PREFIX: /v1
         VITE_ALERTS_API_URL:       https://${APP_DOMAIN}/alerts
         VITE_REPORTS_API_URL:      https://${APP_DOMAIN}/reports
-        VITE_WHATSAPP_API_URL:     ""
+        # Estaba vacío porque el bot no se exponía. Ahora sí: el tablero
+        # necesita esta URL para leer el estado de la sesión y el QR.
+        VITE_WHATSAPP_API_URL:     https://${APP_DOMAIN}/api/whatsapp
         VITE_API_TIMEOUT_MS:       ${VITE_API_TIMEOUT_MS:-30000}
         VITE_KEYCLOAK_URL:         https://${AUTH_DOMAIN}
         VITE_KEYCLOAK_REALM:       ${KC_REALM:-oeste-sentimientos}

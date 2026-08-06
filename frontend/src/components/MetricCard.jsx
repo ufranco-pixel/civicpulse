@@ -16,7 +16,7 @@
  */
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useCatalogs } from '../hooks/useCatalogs.js';
-import { formatByUnit, formatDelta, formatNumber, isNil } from '../config/format.js';
+import { formatByUnit, formatDelta, isNil } from '../config/format.js';
 import InfoTooltip from './InfoTooltip.jsx';
 
 /** Linea de tendencia minima. SVG a mano: recharts para 20 puntos es desmedido. */
@@ -114,15 +114,6 @@ export function MetricCard({
           </span>
         )}
 
-        <span className="cp-metric-n mono" title={minSample ? `Minimo publicable: ${minSample}` : undefined}>
-          n = {isNil(sampleSize) ? '—' : formatNumber(sampleSize)}
-        </span>
-
-        {!reliable && (
-          <span className="cp-metric-warn">
-            muestra insuficiente{minSample ? ` (n < ${formatNumber(minSample)})` : ''}
-          </span>
-        )}
       </div>
 
       {reliable && sparkline && sparkline.length >= 3 && (

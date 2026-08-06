@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { useCampaign } from '../hooks/useCampaign.js';
 import { useApi } from '../hooks/useApi.js';
 import { getEmotions, getOverview, getSources, getTimeseries } from '../services/campaigns.service.js';
-import { formatDateTime, formatNumber } from '../config/format.js';
+import { formatNumber } from '../config/format.js';
 import PageHeader, { ALL_TIME, resolveDays } from '../components/PageHeader.jsx';
 import TimeSeriesChart from '../components/TimeSeriesChart.jsx';
 import SentimentDonut from '../components/SentimentDonut.jsx';
@@ -19,13 +19,6 @@ import MetricCard from '../components/MetricCard.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { SkeletonGrid, SkeletonTile } from '../components/SkeletonTile.jsx';
-
-const HEALTH_CLASS = {
-  healthy: 'badge-positive',
-  stale: 'badge-medium',
-  failing: 'badge-critical',
-  inactive: 'badge-neutral',
-};
 
 export function SentimentPage() {
   const { code } = useCampaign();
@@ -120,11 +113,8 @@ export function SentimentPage() {
                 <tr>
                   <th>Fuente</th>
                   <th>Tipo</th>
-                  <th>Salud</th>
                   <th className="num">24 h</th>
                   <th className="num">7 d</th>
-                  <th className="num">Retraso</th>
-                  <th>Ultimo exito</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,11 +125,8 @@ export function SentimentPage() {
                       {source.last_error && <div className="text-danger" style={{ fontSize: 'var(--fs-2xs)' }}>{source.last_error}</div>}
                     </td>
                     <td><span className="pill">{source.type_label || source.type_code}</span></td>
-                    <td><span className={`badge ${HEALTH_CLASS[source.health] || 'badge-neutral'}`}>{source.health}</span></td>
                     <td className="num mono">{formatNumber(source.volume_24h)}</td>
                     <td className="num mono">{formatNumber(source.volume_7d)}</td>
-                    <td className="num mono">{source.lag_minutes === null || source.lag_minutes === undefined ? '—' : `${Math.round(source.lag_minutes)} min`}</td>
-                    <td className="text-subtle" style={{ fontSize: 'var(--fs-xs)' }}>{formatDateTime(source.last_success_at)}</td>
                   </tr>
                 ))}
               </tbody>

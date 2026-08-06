@@ -12,6 +12,7 @@ const express = require('express');
 const { z } = require('zod');
 
 const bot = require('../bot/client');
+const dispatcher = require('../dispatch/worker');
 const { handleMessage } = require('../bot/handlers');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { validate, asyncHandler } = require('../middleware/validate');
@@ -35,7 +36,16 @@ router.get(
   asyncHandler(async (req, res) => {
     const state = bot.getState();
     if (!req.query.include_qr) delete state.qrCode;
-    res.json({ data: { ...state, hasQr: bot.getState().qrCode !== null } });
+    res.json({
+      data: {
+        ...state,
+        hasQr: bot.getState().qrCode !== null,
+        // El estado del despachador va aquí y no en un endpoint aparte: la
+        // pregunta real cuando no llega un WhatsApp es «¿está el canal vivo?»,
+        // y la respuesta necesita las dos mitades, la sesión y la cola.
+        dispatcher: dispatcher.getStatus(),
+      },
+    });
   }),
 );
 

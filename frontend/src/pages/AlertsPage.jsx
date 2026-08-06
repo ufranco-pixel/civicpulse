@@ -118,7 +118,6 @@ export function AlertsPage() {
                     <span className={`badge badge-${String(alert.severity_code || 'info').toLowerCase()}`}>{alert.severity_code}</span>
                     <strong>{alert.title}</strong>
                     <span className="text-muted">{alert.message}</span>
-                    <span className="pill mono">n = {formatNumber(alert.sample_size)}</span>
                   </li>
                 ))}
               </ul>

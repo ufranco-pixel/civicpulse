@@ -24,6 +24,7 @@ import EmptyState from '../components/EmptyState.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import { SkeletonRows } from '../components/SkeletonTile.jsx';
 import { formatDateTime, formatNumber } from '../config/format.js';
+import ManualCommentCard from '../components/ManualCommentCard.jsx';
 
 const COMPLIANCE_FIELDS = [
   ['sources_missing_legal_basis', 'Fuentes sin base juridica declarada'],
@@ -154,6 +155,9 @@ export function SettingsPage() {
           )}
         </section>
       )}
+
+      {/* Solo se pinta con rol admin; el propio componente devuelve null si no. */}
+      <ManualCommentCard />
 
       <section className="tile">
         <div className="tile-head"><h3 className="tile-title">Trabajos de analisis recientes</h3></div>

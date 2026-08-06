@@ -157,8 +157,34 @@
 @keyframes cp-rotate { to { transform: rotate(360deg); } }
 
 /* ── Cabecera de pagina ───────────────────────────────────────────────── */
+/* .cp-page-head ya no se usa: el titulo y el periodo viven en la barra
+   superior. Se conservan las reglas por si algun componente suelto las
+   referencia, pero ninguna pagina las emite. */
 .cp-page-head { display: flex; align-items: flex-end; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-2); }
 .cp-page-head p { margin: 4px 0 0; font-size: var(--fs-sm); }
+
+/* ── Titulo y periodo en la barra superior ──────────────────────────────── */
+.cp-header-page {
+  /* min-width: 0 permite que el titulo se recorte con puntos suspensivos en
+     vez de empujar el selector de periodo fuera de la barra. */
+  display: flex; flex-direction: column; justify-content: center;
+  min-width: 0; gap: 1px;
+}
+.cp-header-titulo {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg); font-weight: var(--fw-semi);
+  margin: 0; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cp-header-desc {
+  margin: 0; font-size: var(--fs-2xs); color: var(--c-text-subtle);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cp-header-periodo {
+  display: flex; align-items: center; gap: var(--sp-2);
+  flex: 0 0 auto;
+}
+.cp-header-periodo .select { width: auto; }
 
 /* ── Tooltip ──────────────────────────────────────────────────────────── */
 .cp-tip { position: relative; display: inline-flex; }
@@ -470,6 +496,11 @@
   .cp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .cp-page-head { flex-wrap: wrap; gap: var(--sp-2); }
   .cp-page-head h1 { font-size: var(--fs-xl); }
+  /* En movil la barra lleva el boton de menu, el titulo, el periodo y la
+     cuenta. El titulo baja de tamano y el selector se estrecha para que los
+     cuatro quepan en una sola fila sin desbordar. */
+  .cp-header-titulo { font-size: var(--fs-md); }
+  .cp-header-periodo .select { max-width: 128px; font-size: var(--fs-xs); }
 }
 
 /* Fuera de movil no hay cajon ni fondo oscurecido. */

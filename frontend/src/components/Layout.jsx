@@ -5,13 +5,14 @@
  * cada pagina abriera el suyo, un usuario con tres pestanas consumiria nueve
  * de las 500 conexiones que admite cada instancia de alerts-api.
  */
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
-  Activity, AlertTriangle, BarChart3, Ban, ChevronLeft, ChevronRight, ClipboardCheck,
-  FileText, LayoutDashboard, Menu, MessageSquareText, Settings, Users,
+  Activity, AlertTriangle, BarChart3, Ban, ChevronLeft, ChevronRight,
+  FileText, LayoutDashboard, Menu, MessageSquareText, RefreshCw, Settings, Users,
 } from 'lucide-react';
 import { brand } from '../config/brand.js';
+import { PageHeaderSlotContext, PERIODS, periodOptionLabel } from './PageHeader.jsx';
 import { useCampaign } from '../hooks/useCampaign.js';
 import { useAlertStream } from '../hooks/useAlertStream.js';
 import { useAvailableModules } from '../hooks/useAvailableModules.js';
@@ -32,7 +33,6 @@ const NAV = [
   { to: '/agenda',        label: 'Agenda',        icon: BarChart3,          module: 'agenda' },
   { to: '/contenidos',    label: 'Contenidos',    icon: MessageSquareText,  module: 'content' },
   { to: '/alertas',       label: 'Alertas',       icon: AlertTriangle,      module: 'alerts', badge: true },
-  { to: '/revision',      label: 'Revision',      icon: ClipboardCheck,     module: 'review' },
   { to: '/informes',      label: 'Informes',      icon: FileText,           module: 'reports' },
   { to: '/ajustes',       label: 'Ajustes',       icon: Settings,           module: 'settings' },
 ];
@@ -76,7 +76,22 @@ export function Layout() {
   // ancho de sobra y una tira de iconos sin etiqueta no ayuda a nadie.
   const railCollapsed = isMobile ? false : (collapsed || isCompact);
 
+  // ── Ranura de cabecera ────────────────────────────────────────────────────
+  // Cada página publica aquí su título, descripción y periodo, y esta barra
+  // los pinta. Los callbacks viven en un ref y NO en el estado: si viajaran
+  // en el objeto publicado, cada render de la página crearía funciones nuevas
+  // y la publicación provocaría un render del armazón, que volvería a
+  // renderizar la página. Bucle infinito.
+  const [slot, setSlot] = useState(null);
+  const headerCallbacks = useRef({});
+  const publish = useCallback((data) => setSlot(data), []);
+  const slotValue = useMemo(
+    () => ({ publish, callbacks: headerCallbacks }),
+    [publish],
+  );
+
   return (
+    <PageHeaderSlotContext.Provider value={slotValue}>
     <LiveAlertsContext.Provider value={liveValue}>
       <div className={`cp-shell ${railCollapsed ? 'cp-shell-collapsed' : ''} ${drawerOpen ? 'cp-shell-drawer-open' : ''}`}>
         {/* Fondo oscurecido: cierra el cajon al tocar fuera. aria-hidden
@@ -178,25 +193,59 @@ export function Layout() {
         <div className="cp-main">
           <header className="cp-header">
             {isMobile && (
-              <>
-                <button
-                  type="button"
-                  className="cp-burger"
-                  onClick={() => setDrawerOpen(true)}
-                  aria-label="Abrir navegacion"
-                  aria-expanded={drawerOpen}
-                >
-                  <Menu size={20} aria-hidden="true" />
-                </button>
-                {/* En movil la cabecera es lo unico visible del armazon: sin
-                    el nombre aqui, el tablero no dice de que campana habla
-                    hasta que se abre el cajon. */}
-                <span className="cp-header-titulo">
-                  {campaign?.name || brand.productName}
-                </span>
-              </>
+              <button
+                type="button"
+                className="cp-burger"
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Abrir navegacion"
+                aria-expanded={drawerOpen}
+              >
+                <Menu size={20} aria-hidden="true" />
+              </button>
             )}
+
+            {/* Título y descripción de la página activa, publicados por su
+                <PageHeader>. Mientras no haya ninguno montado se cae al
+                nombre de la campaña para que la barra nunca quede muda. */}
+            <div className="cp-header-page">
+              <h1 className="cp-header-titulo">
+                {slot?.title || campaign?.name || brand.productName}
+              </h1>
+              {slot?.description && !isMobile && (
+                <p className="cp-header-desc">{slot.description}</p>
+              )}
+            </div>
+
             <div className="spacer" />
+
+            {slot?.hasDays && (
+              <label className="cp-header-periodo">
+                {!isMobile && <span className="field-label">Periodo</span>}
+                <select
+                  className="select"
+                  value={slot.days}
+                  aria-label="Periodo"
+                  onChange={(e) => headerCallbacks.current.onDaysChange?.(Number(e.target.value))}
+                >
+                  {(slot.periods || PERIODS).map((v) => (
+                    <option key={v} value={v}>{periodOptionLabel(v)}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {slot?.hasReload && (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => headerCallbacks.current.onReload?.()}
+                aria-label="Recargar"
+                title="Recargar"
+              >
+                <RefreshCw size={15} aria-hidden="true" />
+              </button>
+            )}
+
             <UserMenu />
           </header>
 
@@ -221,6 +270,7 @@ export function Layout() {
         </div>
       </div>
     </LiveAlertsContext.Provider>
+    </PageHeaderSlotContext.Provider>
   );
 }
 

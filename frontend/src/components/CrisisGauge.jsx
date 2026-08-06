@@ -8,7 +8,7 @@
  */
 import { ShieldAlert } from 'lucide-react';
 import { useCatalogs } from '../hooks/useCatalogs.js';
-import { formatNumber, isNil } from '../config/format.js';
+import { isNil } from '../config/format.js';
 import InfoTooltip from './InfoTooltip.jsx';
 import ReliabilityBadge from './ReliabilityBadge.jsx';
 
@@ -95,11 +95,6 @@ export function CrisisGauge({ crisis, hours = 24 }) {
 
       {crisis.explanation && <p className="cp-gauge-note">{crisis.explanation}</p>}
 
-      {!reliable && (
-        <p className="cp-metric-warn">
-          muestra insuficiente (n = {formatNumber(crisis.sample_size)} &lt; {formatNumber(metric.min_sample_size)}): el indice se muestra como referencia, no como diagnostico.
-        </p>
-      )}
     </section>
   );
 }

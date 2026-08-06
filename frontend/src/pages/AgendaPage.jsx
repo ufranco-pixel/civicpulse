@@ -95,7 +95,6 @@ export function AgendaPage() {
                     <td>
                       {topic.is_emerging && <span className="pill cp-flag-emerging"><Flame size={11} aria-hidden="true" /> emergente</span>}
                       {topic.is_owned_issue && <span className="pill">tema propio</span>}
-                      {!topic.is_reliable && <span className="pill cp-rel-warn">muestra insuficiente</span>}
                     </td>
                   </tr>
                 ))}

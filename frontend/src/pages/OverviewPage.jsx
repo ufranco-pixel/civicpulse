@@ -6,11 +6,11 @@
  * bloque entero se atenua y las tarjetas dejan de mostrar deltas.
  */
 import { useState } from 'react';
-import { Activity, AlertTriangle, ServerCrash } from 'lucide-react';
+import { Activity, ServerCrash } from 'lucide-react';
 import { useCampaign } from '../hooks/useCampaign.js';
 import { useApi } from '../hooks/useApi.js';
 import { getCrisis, getOverview, getTimeseries, getTopics } from '../services/campaigns.service.js';
-import { formatDateTime, formatNumber } from '../config/format.js';
+import { formatNumber } from '../config/format.js';
 import PageHeader, { ALL_TIME, periodLabel, resolveDays } from '../components/PageHeader.jsx';
 import MetricCard from '../components/MetricCard.jsx';
 import SentimentDonut from '../components/SentimentDonut.jsx';
@@ -62,7 +62,7 @@ export function OverviewPage() {
     <div className="stack animate-in">
       <PageHeader
         title={campaign ? campaign.name : 'Resumen'}
-        description={`Conversacion publica de ${periodLabel(days)}${data?.last_updated ? ` · actualizado ${formatDateTime(data.last_updated)}` : ''}`}
+        description={`Conversacion publica de ${periodLabel(days)}`}
         days={days}
         onDaysChange={setDays}
         onReload={reloadAll}
@@ -76,13 +76,6 @@ export function OverviewPage() {
         <EmptyState title="Sin datos de resumen para el periodo" />
       ) : (
         <>
-          {!reliable && (
-            <p className="cp-banner-warn">
-              <AlertTriangle size={14} aria-hidden="true" />
-              El volumen del periodo esta por debajo del minimo publicable. Los porcentajes se muestran atenuados y no deben citarse.
-            </p>
-          )}
-
           <div className="grid grid-auto">
             <MetricCard
               metricCode="mention_volume"

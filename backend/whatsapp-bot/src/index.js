@@ -23,6 +23,7 @@ const helmet = require('helmet');
 const { logger } = require('./logger');
 const db = require('./db');
 const bot = require('./bot/client');
+const dispatcher = require('./dispatch/worker');
 const templatesStore = require('./store/templates');
 const { requestContext } = require('./middleware/context');
 const { notFound, errorHandler } = require('./middleware/errors');
@@ -133,6 +134,14 @@ const server = app.listen(PORT, () => {
   } else {
     logger.warn('WA_AUTOSTART=false: la sesión se inicia con POST /bot/reconnect');
   }
+
+  // El despachador arranca aunque WhatsApp aún no esté vinculado. No espera a
+  // la sesión a propósito: si esperase, un QR caducado dejaría las entregas
+  // sin reclamar y nadie sabría que hay cola. Arrancando ya, cada intento
+  // fallido queda escrito en `alert_deliveries.error_message` diciendo
+  // exactamente que WhatsApp no está conectado, y se reintenta solo cuando
+  // vuelva.
+  dispatcher.start();
 });
 
 server.keepAliveTimeout = 65000;
@@ -152,6 +161,9 @@ async function shutdown(signal) {
   forced.unref();
 
   server.close(async () => {
+    // Antes que nada: dejar de reclamar entregas. Las que queden en 'sending'
+    // las rescata el siguiente arranque pasados WA_STUCK_MINUTES.
+    dispatcher.stop();
     // Chromium se cierra explícitamente: un navegador huérfano deja bloqueado
     // el perfil de LocalAuth y el siguiente arranque no puede usar la sesión.
     await bot.destroy();

@@ -37,7 +37,10 @@ export function ContendersPage() {
         days={days}
         onDaysChange={setDays}
         onReload={() => { contenders.reload(); coordination.reload(); }}
-        periods={[7, 14, 30, 60]}
+        // Incluye ALL_TIME porque el estado inicial es «Todo»: una lista sin
+        // esa opción deja el <select> con un valor que no existe entre sus
+        // opciones, y el navegador lo pinta vacío.
+        periods={[ALL_TIME, 7, 14, 30, 60]}
       />
 
 

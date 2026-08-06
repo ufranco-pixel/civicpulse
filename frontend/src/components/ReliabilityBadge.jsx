@@ -1,49 +1,21 @@
 /**
- * Distintivo de fiabilidad de la muestra.
+ * Distintivo de fiabilidad de la muestra. RETIRADO de la interfaz.
  *
- * `is_reliable=false` no significa "no hay datos": significa que el volumen
- * esta por debajo del minimo publicable del indicador. Se dice con esas
- * palabras y con el numero, porque "n = 7" junto a "minimo 30" es lo que
- * evita que alguien lleve un 100 % de negatividad a una reunion.
+ * Antes mostraba «n = 7» y «muestra insuficiente» junto a cada indicador. Se
+ * quitó a petición del cliente junto con el resto de avisos de muestra.
+ *
+ * El componente se conserva devolviendo null en vez de borrarse porque lo
+ * importan SentimentDonut, CrisisGauge y las tarjetas de indicador; borrarlo
+ * obligaría a tocar todos esos ficheros y dejaría el camino de vuelta más
+ * largo del necesario. Para reponerlo basta con restaurar este fichero.
+ *
+ * Conviene tenerlo presente: `is_reliable=false` sigue existiendo en la API y
+ * en la base. Lo que ya no se ve es el aviso, no el hecho. Un 100 % de
+ * negatividad calculado sobre tres comentarios se muestra ahora igual que uno
+ * calculado sobre trescientos.
  */
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { formatNumber } from '../config/format.js';
-
-export function ReliabilityBadge({ isReliable, sampleSize, minSampleSize, compact = false }) {
-  const n = Number.isFinite(Number(sampleSize)) ? Number(sampleSize) : null;
-  const min = Number.isFinite(Number(minSampleSize)) ? Number(minSampleSize) : null;
-
-  if (isReliable) {
-    if (compact) {
-      return (
-        <span className="pill" title={`Muestra suficiente${min ? ` (minimo ${min})` : ''}`}>
-          n = {n === null ? '—' : formatNumber(n)}
-        </span>
-      );
-    }
-    return (
-      <span className="pill cp-rel-ok">
-        <CheckCircle2 size={12} aria-hidden="true" />
-        n = {n === null ? '—' : formatNumber(n)}
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className="pill cp-rel-warn"
-      title={
-        min !== null
-          ? `Muestra insuficiente: ${n === null ? 'sin datos' : formatNumber(n)} por debajo del minimo publicable (${formatNumber(min)}).`
-          : 'Muestra insuficiente para publicar el indicador.'
-      }
-    >
-      <AlertTriangle size={12} aria-hidden="true" />
-      muestra insuficiente
-      {n !== null && min !== null ? ` (n = ${formatNumber(n)} < ${formatNumber(min)})` : ''}
-      {n !== null && min === null ? ` (n = ${formatNumber(n)})` : ''}
-    </span>
-  );
+export function ReliabilityBadge() {
+  return null;
 }
 
 export default ReliabilityBadge;

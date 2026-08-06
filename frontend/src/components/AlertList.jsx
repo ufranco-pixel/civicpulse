@@ -154,9 +154,6 @@ export function AlertList({ alerts = [], loading = false, error = null, onReload
               <span className="pill mono">
                 umbral {formatByUnit(alert.threshold_value, alert.metric_unit)}
               </span>
-              <span className="pill mono" title="Tamano de la muestra sobre la que se calculo el valor">
-                n = {formatNumber(alert.sample_size)}
-              </span>
               {alert.contender_name && <span className="pill">{alert.contender_name}</span>}
               {alert.source_name && <span className="pill">{alert.source_name}</span>}
               {alert.window_start && (

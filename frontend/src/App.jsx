@@ -23,7 +23,6 @@ import ContendersPage from './pages/ContendersPage.jsx';
 import AgendaPage from './pages/AgendaPage.jsx';
 import ContentPage from './pages/ContentPage.jsx';
 import AlertsPage from './pages/AlertsPage.jsx';
-import ReviewPage from './pages/ReviewPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -60,14 +59,6 @@ export function App() {
                 <Route path="/agenda" element={<AgendaPage />} />
                 <Route path="/contenidos" element={<ContentPage />} />
                 <Route path="/alertas" element={<AlertsPage />} />
-                <Route
-                  path="/revision"
-                  element={(
-                    <PrivateRoute requiredRoles={WRITE_ROLES}>
-                      <ReviewPage />
-                    </PrivateRoute>
-                  )}
-                />
                 <Route path="/informes" element={<ReportsPage />} />
                 <Route path="/ajustes" element={<SettingsPage />} />
                 <Route path="*" element={<NotFoundPage />} />

@@ -40,6 +40,7 @@ from app.routers import (
     evaluation,
     inferences,
     jobs,
+    manual_comments,
     ops,
 )
 from app.schemas.common import ErrorResponse
@@ -311,6 +312,7 @@ for _router in (
     jobs.router,
     evaluation.router,
     catalogs.router,
+    manual_comments.router,
     ops.router,
 ):
     app.include_router(_router, prefix=settings.API_PREFIX)

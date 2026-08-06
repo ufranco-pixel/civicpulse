@@ -46,7 +46,6 @@ export function EmotionRadar({ emotions = [], height = 300, title = 'Perfil emoc
             text="Peso relativo de cada emocion sobre el total de emociones detectadas. Un mismo texto puede aportar varias: los porcentajes describen el reparto de senales, no de personas."
           />
         </h3>
-        <span className="pill mono">n = {formatNumber(total)}</span>
       </div>
 
       <div style={{ height }}>

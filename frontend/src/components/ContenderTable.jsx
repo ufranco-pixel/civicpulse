@@ -111,9 +111,6 @@ export function ContenderTable({ contenders = [], days = 14 }) {
                         </>
                       )}
                     </div>
-                    {!row.is_reliable && (
-                      <span className="cp-metric-warn">muestra insuficiente para publicar sus porcentajes</span>
-                    )}
                   </td>
                   <td className="num mono">
                     {formatNumber(row.mentions)}

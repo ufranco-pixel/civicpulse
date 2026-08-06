@@ -27,7 +27,7 @@ const brand = {
     agenda: true,
     content: true,
     alerts: true,
-    review: true,
+    review: false,   // retirado del producto
     evaluation: true,
     reports: true,
     settings: true,

@@ -271,7 +271,7 @@ export function AlertRuleForm({ campaignCode, rule = null, onSaved, onCancel }) 
         <div className="tile cp-test-result">
           <strong>Prueba en seco</strong>
           <ul>
-            <li>Valor observado: <span className="mono">{testResult.evaluation?.observed_value ?? '—'}</span> · n = <span className="mono">{formatNumber(testResult.evaluation?.sample_size)}</span></li>
+            <li>Valor observado: <span className="mono">{testResult.evaluation?.observed_value ?? '—'}</span></li>
             <li>Condicion: {testResult.evaluation?.condition_met ? 'se cumple' : 'no se cumple'}</li>
             <li>Dispararia: <b>{testResult.evaluation?.would_fire ? 'si' : 'no'}</b> · notificaria: <b>{testResult.evaluation?.would_notify ? 'si' : 'no'}</b></li>
             {(testResult.evaluation?.blockers || []).length > 0 && (

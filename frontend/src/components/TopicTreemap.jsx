@@ -109,11 +109,6 @@ export function TopicTreemap({ topics = [], height = 380, title = 'Agenda temati
             <TrendingUp size={11} aria-hidden="true" /> tema propio: {t.nombre}
           </span>
         ))}
-        {data.some((t) => !t.is_reliable) && (
-          <span className="pill cp-rel-warn">
-            algunos temas tienen muestra insuficiente y se muestran solo como referencia
-          </span>
-        )}
       </div>
     </section>
   );

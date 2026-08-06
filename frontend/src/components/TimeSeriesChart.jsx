@@ -51,7 +51,6 @@ export function TimeSeriesChart({ points = [], height = 320, title = 'Evolucion 
   }));
 
   const spikes = data.filter((point) => point.is_spike);
-  const unreliableCount = data.filter((point) => !point.is_reliable).length;
 
   return (
     <section className="tile">
@@ -65,11 +64,6 @@ export function TimeSeriesChart({ points = [], height = 320, title = 'Evolucion 
         </h3>
         <div className="row" style={{ gap: 'var(--sp-2)' }}>
           {spikes.length > 0 && <span className="pill">{spikes.length} pico(s) de volumen</span>}
-          {unreliableCount > 0 && (
-            <span className="pill cp-rel-warn" title="Dias por debajo del minimo publicable: sin linea de tendencia.">
-              {unreliableCount} dia(s) con muestra insuficiente
-            </span>
-          )}
         </div>
       </div>
 
