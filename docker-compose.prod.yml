@@ -356,8 +356,14 @@ services:
       sentiment-api:
         condition: service_started
     environment:
-      # Mismo origen para todo: connect-src sólo necesita 'self'.
+      # Mismo origen para todo el tráfico de datos: connect-src apenas necesita
+      # 'self' más Keycloak, que sí vive en otro subdominio.
       CSP_CONNECT_SRC: "'self' https://${AUTH_DOMAIN}"
+      # OBLIGATORIO. El inicio de sesión silencioso enmarca a Keycloak antes de
+      # volver a /silent-check-sso.html. Sin este valor, nginx usa el de la
+      # imagen ('self' http://localhost:8080) y la CSP corta el iframe: el
+      # usuario vuelve a la pantalla de login en cada recarga.
+      CSP_FRAME_SRC:   "'self' https://${AUTH_DOMAIN}"
     labels:
       traefik.enable: "true"
       traefik.docker.network: ${TRAEFIK_NETWORK}
@@ -369,14 +375,20 @@ services:
       # arriba. Con la misma prioridad se comería /api, /alerts y /reports.
       traefik.http.routers.cp-web.priority: "1"
       traefik.http.routers.cp-web.middlewares: cp-web-headers@docker
-      # Cabeceras de seguridad. Si su Traefik ya aplica un middleware global
-      # equivalente, sustituya esta referencia por la suya y borre las cinco
-      # líneas de abajo para no duplicarlas.
+      # AQUÍ SÓLO VA HSTS.
+      #
+      # Las demás cabeceras de seguridad (X-Frame-Options, nosniff,
+      # Referrer-Policy, CSP) las emite nginx, que es quien conoce las
+      # necesidades reales de la aplicación. Duplicarlas aquí no suma
+      # protección y sí rompe: con dos X-Frame-Options distintas el navegador
+      # aplica la más restrictiva, así que un `frameDeny` en el proxy anula el
+      # SAMEORIGIN que necesita el SSO silencioso de Keycloak. Eso era
+      # exactamente el error «Refused to display … X-Frame-Options to deny».
+      #
+      # HSTS sí corresponde al proxy: nginx recibe HTTP en la red interna y no
+      # puede saber que la conexión del usuario fue por TLS.
       traefik.http.middlewares.cp-web-headers.headers.stsSeconds: "31536000"
       traefik.http.middlewares.cp-web-headers.headers.stsIncludeSubdomains: "true"
-      traefik.http.middlewares.cp-web-headers.headers.contentTypeNosniff: "true"
-      traefik.http.middlewares.cp-web-headers.headers.frameDeny: "true"
-      traefik.http.middlewares.cp-web-headers.headers.referrerPolicy: strict-origin-when-cross-origin
       traefik.http.services.cp-web.loadbalancer.server.port: "8080"
 
 volumes:
